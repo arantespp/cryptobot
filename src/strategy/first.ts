@@ -237,6 +237,9 @@ export const saveBuyOrder = async ({
   debug(item);
 };
 
+/**
+ * Quote operation is the same as buy assets using the quote currency.
+ */
 export const executeQuoteOperation = async ({
   strategyData,
   walletProportion,
@@ -249,7 +252,7 @@ export const executeQuoteOperation = async ({
   debug('Starting Quote Operation');
 
   if (!doesHaveEnoughBalance({ strategyData })) {
-    debug('Not enough balance. Exit');
+    debug('Not enough balance');
     return false;
   }
 
@@ -274,9 +277,21 @@ export const executeQuoteOperation = async ({
     usedDepositsBalance: canUseDepositsBalanceBool,
   });
 
-  await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
+  if (canUseDepositsBalanceBool) {
+    debug('Updating used deposits balance');
+    await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
+  } else {
+    debug('Cannot update used deposits balance');
+  }
 
   debug('Quote Operation Finished');
+
+  return true;
+};
+
+export const executeAssetsOperation = async () => {
+  const debug = Debug('CryptoBot:executeAssetsOperation');
+  debug('Starting Assets Operation');
 };
 
 export const runFirstStrategy = async () => {
@@ -292,12 +307,31 @@ export const runFirstStrategy = async () => {
 
   debug({ strategyData, walletProportion });
 
-  await executeQuoteOperation({ strategyData, walletProportion });
+  debug('Executing quote operation for the first time');
+
+  const wasQuoteOperationExecuted = await executeQuoteOperation({
+    strategyData,
+    walletProportion,
+  });
+
+  if (!wasQuoteOperationExecuted) {
+    debug('Quote Operation was not executed in the first time');
+    debug('Executing Assets Operation');
+
+    await executeAssetsOperation();
+
+    debug('Executing Quote Operation for the second time');
+
+    executeQuoteOperation({
+      strategyData,
+      walletProportion,
+    });
+  }
 
   debug('First Strategy Finished');
 };
 
 export const startStrategy = () => {
-  console.log('Starting Strategy');
+  console.log('Starting Strategy' + isProduction ? ' in production mode' : '');
   cron.schedule('* * * * *', runFirstStrategy);
 };
