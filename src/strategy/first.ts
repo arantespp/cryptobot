@@ -1,5 +1,6 @@
 import { Order } from '@binance/connector';
 import Debug from 'debug';
+import cron from 'node-cron';
 
 import {
   getStrategyData,
@@ -11,20 +12,20 @@ import * as database from '../api/database';
 
 import { isProduction } from '../config';
 
+import { WALLET } from './wallet';
+
 export { QUOTE_BASE_TICKER };
 
 type WalletProportion = { [asset: string]: number };
 
 const getWalletProportion = async (): Promise<WalletProportion> => {
   if (isProduction) {
-    return {
-      BTC: 100,
-      ETH: 50,
-      ADA: 20,
-      VET: 10,
-    };
+    return WALLET;
   }
 
+  /**
+   * Test mode wallet.
+   */
   return {
     BTC: 100,
     ETH: 50,
@@ -66,6 +67,8 @@ export const getExtremeProportions = ({
   strategyData: StrategyData;
   walletProportion: WalletProportion;
 }) => {
+  const debug = Debug('CryptoBot:getExtremeProportions');
+
   const tickers = getWalletProportionTickers(walletProportion);
 
   const { assets } = strategyData;
@@ -76,12 +79,14 @@ export const getExtremeProportions = ({
   );
 
   const currentWalletProportion = tickers.reduce((acc, ticker) => {
-    acc[ticker] = (assets[ticker]?.totalValue || 0) / walletTotalValue;
+    acc[ticker] = (assets[ticker]?.totalValue || 0) / (walletTotalValue || 1);
     return acc;
   }, {});
 
   const targetWalletProportionNormalized =
     getWalletProportionNormalized(walletProportion);
+
+  debug({ currentWalletProportion, targetWalletProportionNormalized });
 
   const ratio = tickers.reduce((acc, ticker) => {
     acc[ticker] =
@@ -100,6 +105,8 @@ export const getExtremeProportions = ({
   ) as string;
 
   const lowest = tickers.find((ticker) => ratio[ticker] === minRatio) as string;
+
+  debug({ highest, lowest, ratio, maxRatio, minRatio });
 
   return { highest, lowest };
 };
@@ -162,6 +169,37 @@ export const updateUsedDepositsBalance = async (amount: number) => {
   debug({ newUsed: used, amount });
 };
 
+export const getAssetAndQuotePropertiesFromBuyOrder = (order: Order) => {
+  const debug = Debug('CryptoBot:getAssetAndQuotePropertiesFromBuyOrder');
+
+  const fills = order.fills.map((fill) => ({
+    ...fill,
+    effectiveQuantity: Number(fill.qty) - Number(fill.commission),
+  }));
+
+  /**
+   * It'll be the same amount that will be sold in the sell order.
+   */
+  const assetQuantity = fills.reduce(
+    (acc, { effectiveQuantity }) => acc + effectiveQuantity,
+    0
+  );
+
+  /**
+   * It'll be used to determine if this croton is profitable.
+   */
+  const quotePrice =
+    fills.reduce(
+      (acc, { effectiveQuantity, price }) =>
+        acc + effectiveQuantity * Number(price),
+      0
+    ) / assetQuantity;
+
+  debug({ assetQuantity, quotePrice, order });
+
+  return { assetQuantity, quotePrice };
+};
+
 export const saveBuyOrder = async ({
   asset,
   order,
@@ -177,9 +215,26 @@ export const saveBuyOrder = async ({
 
   const date = new Date().toISOString();
 
-  await database.putItem({
-    item: { pk: asset, sk: date, status: date, order, usedDepositsBalance },
-  });
+  const { assetQuantity, quotePrice } =
+    getAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const status = `BUY_PRICE_${quotePrice}`;
+
+  const item = {
+    pk: asset,
+    sk: `ORDER_BUY_${date}`,
+    status,
+    order,
+    usedDepositsBalance,
+    assetQuantity,
+    quotePrice,
+  };
+
+  debug('Saving item');
+
+  await database.putItem({ item });
+
+  debug(item);
 };
 
 export const executeQuoteOperation = async ({
@@ -227,7 +282,7 @@ export const executeQuoteOperation = async ({
 export const runFirstStrategy = async () => {
   const debug = Debug('CryptoBot:runFirstStrategy');
 
-  debug('Starting First Strategy');
+  debug('Run First Strategy');
 
   const walletProportion = await getWalletProportion();
 
@@ -240,4 +295,9 @@ export const runFirstStrategy = async () => {
   await executeQuoteOperation({ strategyData, walletProportion });
 
   debug('First Strategy Finished');
+};
+
+export const startStrategy = () => {
+  console.log('Starting Strategy');
+  cron.schedule('* * * * *', runFirstStrategy);
 };

@@ -6,6 +6,7 @@ import {
   QUOTE_BASE_TICKER,
   executeQuoteOperation,
   canUseDepositsBalance,
+  getAssetAndQuotePropertiesFromBuyOrder,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
@@ -14,21 +15,7 @@ import * as databaseModule from '../api/database';
 jest.mock('../api/binance');
 jest.mock('../api/database');
 
-test.each([
-  { used: 1000, amount: 1000, quantityToBuy: 100, canUse: false },
-  { used: 900, amount: 1000, quantityToBuy: 10, canUse: true },
-])(
-  'canUseDepositsBalance %#',
-  async ({ used, amount, quantityToBuy, canUse }) => {
-    jest
-      .spyOn(databaseModule, 'getItem')
-      .mockResolvedValue({ used, deposits: [{ amount }] });
-
-    expect(await canUseDepositsBalance(quantityToBuy)).toBe(canUse);
-  }
-);
-
-test.each([
+test.skip.each([
   [
     'buy ETH',
     {
@@ -101,6 +88,47 @@ test.each([
     });
   }
 );
+
+test.each([
+  [{ used: 1000, amount: 1000, quantityToBuy: 100, canUse: false }],
+  [{ used: 900, amount: 1000, quantityToBuy: 10, canUse: true }],
+])(
+  'canUseDepositsBalance %#',
+  async ({ used, amount, quantityToBuy, canUse }) => {
+    jest
+      .spyOn(databaseModule, 'getItem')
+      .mockResolvedValue({ used, deposits: [{ amount }] });
+
+    expect(await canUseDepositsBalance(quantityToBuy)).toBe(canUse);
+  }
+);
+
+test.each([
+  [
+    { fills: [{ price: 10000, qty: 100, commission: 10 }] },
+    { assetQuantity: 90, quotePrice: 10000 },
+  ],
+  [
+    {
+      fills: [
+        { price: 10000, qty: 100, commission: 10 },
+        { price: 10000, qty: 100, commission: 10 },
+      ],
+    },
+    { assetQuantity: 180, quotePrice: 10000 },
+  ],
+  [
+    {
+      fills: [
+        { price: 10000, qty: 100, commission: 10 },
+        { price: 5000, qty: 100, commission: 10 },
+      ],
+    },
+    { assetQuantity: 180, quotePrice: 7500 },
+  ],
+])('getAssetAndQuotePropertiesFromBuyOrder %#', (order, result) => {
+  expect(getAssetAndQuotePropertiesFromBuyOrder(order as any)).toEqual(result);
+});
 
 test('does not buy because does not have enough balance', async () => {
   const buyOrderMock = jest.spyOn(apiBinanceModule, 'buyOrder');
