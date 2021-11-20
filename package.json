@@ -1,0 +1,23 @@
+{
+  "name": "cryptobot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Pedro Arantes",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.41.0",
+    "@binance/connector": "^1.5.0",
+    "deepmerge": "^4.2.2",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.8",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.2"
+  }
+}
