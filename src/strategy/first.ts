@@ -124,12 +124,52 @@ export const doesHaveEnoughBalance = ({
   );
 };
 
+const DEPOSITS_KEY = {
+  pk: QUOTE_BASE_TICKER,
+  sk: 'DEPOSITS',
+};
+
+type Deposits = {
+  deposits: { amount: number }[];
+  used: number;
+};
+
+export const canUseDepositsBalance = async (amount: number) => {
+  const debug = Debug('CryptoBot:canUseDepositsBalance');
+
+  const { used, deposits } = await database.getItem<Deposits>(DEPOSITS_KEY);
+
+  const sumDeposits = deposits.reduce((acc, { amount }) => acc + amount, 0);
+
+  const remaining = sumDeposits - used;
+
+  const canUse = remaining >= amount;
+
+  debug({ sumDeposits, used, remaining, canUse });
+
+  return canUse;
+};
+
+export const updateUsedDepositsBalance = async (amount: number) => {
+  const debug = Debug('CryptoBot:updateUsedDepositsBalance');
+
+  const { used } = await database.updateItem({
+    key: DEPOSITS_KEY,
+    updateExpression: 'ADD used :amount',
+    expressionAttributeValues: { ':amount': amount },
+  });
+
+  debug({ newUsed: used, amount });
+};
+
 export const saveBuyOrder = async ({
   asset,
   order,
+  usedDepositsBalance,
 }: {
   asset: string;
   order: Order;
+  usedDepositsBalance: boolean;
 }) => {
   const debug = Debug('CryptoBot:saveBuyOrder');
 
@@ -138,7 +178,7 @@ export const saveBuyOrder = async ({
   const date = new Date().toISOString();
 
   await database.putItem({
-    item: { pk: asset, sk: date, status: date, order },
+    item: { pk: asset, sk: date, status: date, order, usedDepositsBalance },
   });
 };
 
@@ -165,13 +205,21 @@ export const executeQuoteOperation = async ({
 
   const quoteOrderQty = getEffectiveMinNotional({ strategyData });
 
-  debug({ lowest, highest, quoteOrderQty });
+  const canUseDepositsBalanceBool = await canUseDepositsBalance(quoteOrderQty);
+
+  debug({ lowest, highest, quoteOrderQty, canUseDepositsBalanceBool });
 
   const order = await buyOrder({ quoteOrderQty, asset: lowest });
 
   debug(order);
 
-  await saveBuyOrder({ asset: lowest, order });
+  await saveBuyOrder({
+    asset: lowest,
+    order,
+    usedDepositsBalance: canUseDepositsBalanceBool,
+  });
+
+  await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
 
   debug('Quote Operation Finished');
 };

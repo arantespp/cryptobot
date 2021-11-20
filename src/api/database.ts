@@ -1,5 +1,10 @@
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { marshall } from '@aws-sdk/util-dynamodb';
+import {
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+  UpdateItemCommand,
+} from '@aws-sdk/client-dynamodb';
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
 const {
   AWS_REGION,
@@ -30,7 +35,12 @@ const dynamoDb = new DynamoDBClient({
   },
 });
 
-type Item = { pk: string; sk: string; [key: string]: any };
+type PrimaryKey = {
+  pk: string;
+  sk: string;
+};
+
+type Item = PrimaryKey & { [key: string]: any };
 
 export const putItem = async ({ item }: { item: Item }) => {
   const putItemCommand = new PutItemCommand({
@@ -39,4 +49,37 @@ export const putItem = async ({ item }: { item: Item }) => {
   });
 
   return dynamoDb.send(putItemCommand);
+};
+
+export const getItem = async <I extends Partial<Item>>(key: PrimaryKey) => {
+  const getItemCommand = new GetItemCommand({
+    TableName: TABLE_NAME,
+    Key: marshall(key),
+  });
+
+  const { Item = {} } = await dynamoDb.send(getItemCommand);
+
+  return unmarshall(Item) as I;
+};
+
+export const updateItem = async <I extends Partial<Item>>({
+  key,
+  updateExpression,
+  expressionAttributeValues,
+}: {
+  key: PrimaryKey;
+  updateExpression: string;
+  expressionAttributeValues: { [key: string]: any };
+}) => {
+  const updateItemCommand = new UpdateItemCommand({
+    TableName: TABLE_NAME,
+    Key: marshall(key),
+    UpdateExpression: updateExpression,
+    ReturnValues: 'ALL_NEW',
+    ExpressionAttributeValues: marshall(expressionAttributeValues),
+  });
+
+  const { Attributes = {} } = await dynamoDb.send(updateItemCommand);
+
+  return unmarshall(Attributes) as I;
 };

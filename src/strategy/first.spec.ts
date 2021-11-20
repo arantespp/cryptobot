@@ -5,11 +5,28 @@ import {
   getEffectiveMinNotional,
   QUOTE_BASE_TICKER,
   executeQuoteOperation,
+  canUseDepositsBalance,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
+import * as databaseModule from '../api/database';
 
 jest.mock('../api/binance');
+jest.mock('../api/database');
+
+test.each([
+  { used: 1000, amount: 1000, quantityToBuy: 100, canUse: false },
+  { used: 900, amount: 1000, quantityToBuy: 10, canUse: true },
+])(
+  'canUseDepositsBalance %#',
+  async ({ used, amount, quantityToBuy, canUse }) => {
+    jest
+      .spyOn(databaseModule, 'getItem')
+      .mockResolvedValue({ used, deposits: [{ amount }] });
+
+    expect(await canUseDepositsBalance(quantityToBuy)).toBe(canUse);
+  }
+);
 
 test.each([
   [
@@ -64,6 +81,10 @@ test.each([
   'executeQuoteOperation %#: %s',
   async (_, walletProportion, strategyData, assetToBuy) => {
     const buyOrderMock = jest.spyOn(apiBinanceModule, 'buyOrder');
+
+    jest
+      .spyOn(databaseModule, 'getItem')
+      .mockResolvedValue({ used: 1000, deposits: [{ amount: 1000 }] });
 
     await executeQuoteOperation({
       strategyData: strategyData as any,
