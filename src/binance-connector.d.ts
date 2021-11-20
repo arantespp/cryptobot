@@ -1,28 +1,3 @@
-// {
-//   "symbol": "BTCBUSD",
-//   "orderId": 3753014780,
-//   "orderListId": -1,
-//   "clientOrderId": "8eBjTVyDVQshaGeIAtef4o",
-//   "transactTime": 1637405066716,
-//   "price": "0.00000000",
-//   "origQty": "0.00034000",
-//   "executedQty": "0.00034000",
-//   "cummulativeQuoteQty": "19.93200700",
-//   "status": "FILLED",
-//   "timeInForce": "GTC",
-//   "type": "MARKET",
-//   "side": "BUY",
-//   "fills": [
-//     {
-//       "price": "58623.55000000",
-//       "qty": "0.00034000",
-//       "commission": "0.00000034",
-//       "commissionAsset": "BTC",
-//       "tradeId": 269707612
-//     }
-//   ]
-// }
-
 declare module '@binance/connector' {
   export type ExchangeInfo = {
     symbols: {
@@ -65,6 +40,29 @@ declare module '@binance/connector' {
     }[];
   };
 
+  export type Order = {
+    symbol: string;
+    orderId: number;
+    orderListId: number;
+    clientOrderId: string;
+    transactTime: number;
+    price: string;
+    origQty: string;
+    executedQty: string;
+    cummulativeQuoteQty: string;
+    status: 'FILLED';
+    timeInForce: 'GTC';
+    type: 'MARKET';
+    side: 'SELL' | 'BUY';
+    fills: {
+      price: string;
+      qty: string;
+      commission: string;
+      commissionAsset: string;
+      tradeId: number;
+    }[];
+  };
+
   export class Spot {
     constructor(
       apiKey: string,
@@ -78,7 +76,7 @@ declare module '@binance/connector' {
       data: { balances: { asset: string; free: string }[] };
     }>;
 
-    public tickerPrice(ticker: string): Promise<{
+    public tickerPrice(asset: string): Promise<{
       data: {
         symbol: string;
         price: string;
@@ -89,7 +87,13 @@ declare module '@binance/connector' {
       symbol: string,
       side: 'BUY' | 'SELL',
       type: 'MARKET',
-      options?: Partial<{ quantity: string; quoteOrderQty: number }>
-    ): any;
+      options?: Partial<{ quantity: number; quoteOrderQty: number }>
+    ): Promise<{ data: Order }>;
+
+    public savingsFlexibleRedeem(
+      productId: string,
+      amount: number,
+      type: 'FAST' | 'NORMAL'
+    ): Promise<{ data: {} }>;
   }
 }

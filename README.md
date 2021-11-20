@@ -1,3 +1,21 @@
+## Strategy
+
+A cron job will run the strategy in a certain interval of 1 minute. One minute because crotons are sufficient small.
+
+### Coins Quantity
+
+We'll use coins quantity to measure if the strategy is increasing the quantity of coins.
+
+### Fiat
+
+The first step is to handle buying with fiat.
+
+1. It will check if the fiat balance is enough to buy the asset with the lowest proportion in the portfolio.
+2. Once bought:
+   1. It will save the order data in the database.
+   2. It will update the deposit balance, because we'll consider the fiat used to buy the asset was from the deposit balance.
+   3. If was not from deposit balance, it will update the coins quantity on database.
+
 ## Database
 
 I need a table that perform these operations:

@@ -6,14 +6,6 @@ import merge from 'deepmerge';
 
 const { BINANCE_API_KEY, BINANCE_SECRET_KEY, BINANCE_BASE_URL } = process.env;
 
-export const QUOTE_BASE_TICKER = 'BUSD';
-
-const getSymbolFromAsset = (asset: string) =>
-  `${asset}${QUOTE_BASE_TICKER}`.toUpperCase();
-
-const getSymbolsFromAssets = (assets: string[]) =>
-  assets.map(getSymbolFromAsset);
-
 if (!BINANCE_API_KEY) {
   throw new Error('BINANCE_API_KEY is not set');
 }
@@ -22,6 +14,17 @@ if (!BINANCE_SECRET_KEY) {
   throw new Error('BINANCE_SECRET_KEY is not set');
 }
 
+export const QUOTE_BASE_TICKER = 'BUSD';
+
+const getSymbolFromAsset = (asset: string) =>
+  `${asset}${QUOTE_BASE_TICKER}`.toUpperCase();
+
+const getSymbolsFromAssets = (assets: string[]) =>
+  assets.map(getSymbolFromAsset);
+
+/**
+ * Strategic Data
+ */
 const client = new Spot(BINANCE_API_KEY, BINANCE_SECRET_KEY, {
   baseURL: BINANCE_BASE_URL,
 });
@@ -62,22 +65,6 @@ export const getAssetsMinNotional = async (assets: string[]) => {
     }, 0);
 
   return minNotional;
-};
-
-export const buy = async () => {
-  const order = await client.newOrder('BTCBUSD', 'BUY', 'MARKET', {
-    quoteOrderQty: 20,
-  });
-
-  console.log(JSON.stringify(order.data, null, 2));
-};
-
-export const sell = async () => {
-  const order = await client.newOrder('BTCBUSD', 'SELL', 'MARKET', {
-    quantity: '0.0001800',
-  });
-
-  console.log(JSON.stringify(order.data, null, 2));
 };
 
 type WalletBalances = {
@@ -138,30 +125,94 @@ export type StrategyData = {
   minNotional: number;
   assets: {
     [asset: string]: AllAssetsPrice[string] &
-      WalletBalances[string] & { totalValue: number };
+      WalletBalances[string] & {
+        totalValue: number;
+        filters?: ExchangeInfo['symbols'][number]['filters'];
+      };
   };
 };
 
 export const getStrategyData = async (
   assets: string[]
 ): Promise<StrategyData> => {
-  const [balances, tickersPrice, minNotional] = await Promise.all([
-    getWalletBalances(assets),
-    getAllAssetsPrice(assets),
-    getAssetsMinNotional(assets),
-  ]);
+  const [balances, tickersPrice, minNotional, exchangeInfo] = await Promise.all(
+    [
+      getWalletBalances(assets),
+      getAllAssetsPrice(assets),
+      getAssetsMinNotional(assets),
+      getExchangeInfo(),
+    ]
+  );
 
   const assetsData = merge(balances, tickersPrice) as StrategyData['assets'];
 
   Object.keys(assetsData).forEach((asset) => {
+    /**
+     * Assign totalValue.
+     */
     if (asset === QUOTE_BASE_TICKER) {
       assetsData[asset].totalValue = assetsData[asset].quantity;
-      return;
+    } else {
+      assetsData[asset].totalValue =
+        assetsData[asset].price * assetsData[asset].quantity;
     }
 
-    assetsData[asset].totalValue =
-      assetsData[asset].price * assetsData[asset].quantity;
+    /**
+     * Assign filters.
+     */
+    assetsData[asset].filters = exchangeInfo.symbols.find(
+      ({ symbol }) => symbol === getSymbolFromAsset(asset)
+    )?.filters;
   });
 
   return { assets: assetsData, minNotional };
+};
+
+/**
+ * Orders
+ */
+
+export const buyOrder = async ({
+  symbol,
+  quoteOrderQty,
+}: {
+  symbol: string;
+  quoteOrderQty: number;
+}) => {
+  const order = await client.newOrder(symbol, 'BUY', 'MARKET', {
+    quoteOrderQty,
+  });
+
+  return order.data;
+};
+
+export const sellOrder = async ({
+  symbol,
+  quantity,
+}: {
+  symbol: string;
+  quantity: number;
+}) => {
+  const order = await client.newOrder(symbol, 'SELL', 'MARKET', {
+    quantity,
+  });
+
+  return order.data;
+};
+
+export const redeemFlexibleSavings = async ({
+  asset,
+  amount,
+}: {
+  asset: string;
+  amount: number;
+}) => {
+  const productId = `${asset}001`;
+  const { data } = await client.savingsFlexibleRedeem(
+    productId,
+    amount,
+    'FAST'
+  );
+
+  return data;
 };

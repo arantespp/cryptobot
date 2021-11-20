@@ -1,50 +1,77 @@
-import { getStrategyStatus, Status } from '../api/exchange';
+import {
+  getStrategyData,
+  StrategyData,
+  QUOTE_BASE_TICKER,
+} from '../api/binance';
 
-const walletProportion = {
-  BTC: 100,
-  ETH: 50,
-  ADA: 20,
-  VET: 10,
-} as const;
+export { QUOTE_BASE_TICKER };
 
-const tickers = Object.keys(walletProportion);
+type WalletProportion = { [asset: string]: number };
 
-const walletProportionNormalized = (() => {
-  const walletProportionSum = tickers.reduce(
-    (sum, ticker) => sum + walletProportion[ticker],
+const getWalletProportion = async () => {
+  return {
+    BTC: 100,
+    ETH: 50,
+    ADA: 20,
+    VET: 10,
+  };
+};
+
+const getWalletProportionTickers = (wallet: WalletProportion) =>
+  Object.keys(wallet);
+
+export const getWalletProportionNormalized = (wallet: WalletProportion) => {
+  const walletTickers = Object.keys(wallet);
+
+  const walletProportionSum = walletTickers.reduce(
+    (sum, ticker) => sum + wallet[ticker],
     0
   );
 
-  const normalized = { ...walletProportion };
+  const normalized = { ...wallet };
 
-  tickers.forEach((ticker) => {
+  walletTickers.forEach((ticker) => {
     normalized[ticker] /= walletProportionSum;
   });
 
   return normalized;
-})();
+};
 
 /**
  *
- * @param status
+ * @param strategyData: StrategyData
  * @returns object.highest: ticker of the highest proportion in the wallet.
  *          object.lowest: ticker of the lowest proportion in the wallet.
  */
-const getExtremeProportions = (status: Status) => {
+export const getExtremeProportions = ({
+  strategyData,
+  walletProportion,
+}: {
+  strategyData: StrategyData;
+  walletProportion: WalletProportion;
+}) => {
+  const tickers = getWalletProportionTickers(walletProportion);
+
+  const { assets } = strategyData;
+
   const walletTotalValue = tickers.reduce(
-    (acc, ticker) => acc + status[ticker].totalValue,
+    (acc, ticker) => acc + (assets[ticker]?.totalValue || 0),
     0
   );
 
   const currentWalletProportion = tickers.reduce((acc, ticker) => {
-    acc[ticker] = status[ticker].totalValue / walletTotalValue;
+    acc[ticker] = (assets[ticker]?.totalValue || 0) / walletTotalValue;
     return acc;
   }, {});
 
+  const targetWalletProportionNormalized =
+    getWalletProportionNormalized(walletProportion);
+
   const ratio = tickers.reduce((acc, ticker) => {
     acc[ticker] =
-      (currentWalletProportion[ticker] - walletProportionNormalized[ticker]) /
-      walletProportionNormalized[ticker];
+      (currentWalletProportion[ticker] -
+        targetWalletProportionNormalized[ticker]) /
+      targetWalletProportionNormalized[ticker];
     return acc;
   }, {} as { [ticker: string]: number });
 
@@ -61,8 +88,29 @@ const getExtremeProportions = (status: Status) => {
   return { highest, lowest };
 };
 
-export const runFirstStrategy = async () => {
-  const status = await getStrategyStatus(tickers);
+/**
+ * Multiplied by 1.5 to have a margin for filters.
+ */
+export const getEffectiveMinNotional = (minNotional: number) =>
+  minNotional * 1.5;
 
-  return getExtremeProportions(status);
+export const doesHaveEnoughBalance = ({
+  strategyData,
+}: {
+  strategyData: StrategyData;
+}) => {
+  return (
+    strategyData.assets[QUOTE_BASE_TICKER].totalValue >=
+    getEffectiveMinNotional(strategyData.minNotional)
+  );
+};
+
+export const runFirstStrategy = async () => {
+  const walletProportion = await getWalletProportion();
+
+  const tickers = getWalletProportionTickers(await getWalletProportion());
+
+  const strategyData = await getStrategyData(tickers);
+
+  return getExtremeProportions({ strategyData, walletProportion });
 };
