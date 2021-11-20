@@ -43,8 +43,8 @@ const getExtremeProportions = (status: Status) => {
 
   const ratio = tickers.reduce((acc, ticker) => {
     acc[ticker] =
-      (currentWalletProportion[ticker] - walletProportion[ticker]) /
-      walletProportion[ticker];
+      (currentWalletProportion[ticker] - walletProportionNormalized[ticker]) /
+      walletProportionNormalized[ticker];
     return acc;
   }, {} as { [ticker: string]: number });
 

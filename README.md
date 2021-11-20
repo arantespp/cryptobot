@@ -1,6 +1,12 @@
+## Database
+
+I need a table that perform these operations:
+
+- I can query for the ticker and return the crotons I brought with the lowest price.
+
 ## Trades
 
-### 2021-11-19
+### Buy
 
 First trade was buying BTC using USDT as quote. I sent the order with the args:
 
@@ -25,3 +31,7 @@ The order executed result was:
 ```
 
 The final BTC balance was `0.00016983` because of the deducted the fee of 0.1%. The BTC average price was `56059.66`.
+
+### Sell
+
+I have a total of `10.78923588` BUSD and `0.00017444` BTC before the transaction.
