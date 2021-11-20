@@ -11,7 +11,9 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.41.0",
+    "@aws-sdk/util-dynamodb": "^3.42.0",
     "@binance/connector": "^1.5.0",
+    "debug": "^4.3.2",
     "deepmerge": "^4.2.2",
     "dotenv": "^10.0.0"
   },

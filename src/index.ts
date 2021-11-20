@@ -1,4 +1,8 @@
-require('dotenv').config({ path: './.env.production' });
+import { isProduction } from './config';
+
+require('dotenv').config({
+  path: isProduction ? './.env.production' : './.env',
+});
 
 import { runFirstStrategy } from './strategy/first';
 
