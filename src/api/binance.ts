@@ -173,12 +173,14 @@ export const getStrategyData = async (
  */
 
 export const buyOrder = async ({
-  symbol,
+  asset,
   quoteOrderQty,
 }: {
-  symbol: string;
+  asset: string;
   quoteOrderQty: number;
 }) => {
+  const symbol = getSymbolFromAsset(asset);
+
   const order = await client.newOrder(symbol, 'BUY', 'MARKET', {
     quoteOrderQty,
   });

@@ -4,7 +4,107 @@ import {
   doesHaveEnoughBalance,
   getEffectiveMinNotional,
   QUOTE_BASE_TICKER,
+  executeQuoteOperation,
 } from './first';
+
+import * as apiBinanceModule from '../api/binance';
+
+jest.mock('../api/binance');
+
+test.each([
+  [
+    'buy ETH',
+    {
+      BTC: 100,
+      ETH: 100,
+      ADA: 100,
+    },
+    {
+      minNotional: 10,
+      assets: {
+        [QUOTE_BASE_TICKER]: { totalValue: 1000 },
+        BTC: {
+          totalValue: 100,
+        },
+        ETH: {
+          totalValue: 50,
+        },
+        ADA: {
+          totalValue: 100,
+        },
+      },
+    },
+    'ETH',
+  ],
+  [
+    'buy ADA',
+    {
+      BTC: 100,
+      ETH: 100,
+      ADA: 100,
+    },
+    {
+      minNotional: 10,
+      assets: {
+        [QUOTE_BASE_TICKER]: { totalValue: 1000 },
+        BTC: {
+          totalValue: 99,
+        },
+        ETH: {
+          totalValue: 90,
+        },
+        ADA: {
+          totalValue: 50,
+        },
+      },
+    },
+    'ADA',
+  ],
+])(
+  'executeQuoteOperation %#: %s',
+  async (_, walletProportion, strategyData, assetToBuy) => {
+    const buyOrderMock = jest.spyOn(apiBinanceModule, 'buyOrder');
+
+    await executeQuoteOperation({
+      strategyData: strategyData as any,
+      walletProportion,
+    });
+
+    const quoteOrderQty = getEffectiveMinNotional({
+      strategyData: strategyData as any,
+    });
+
+    expect(buyOrderMock).toHaveBeenCalledWith({
+      asset: assetToBuy,
+      quoteOrderQty,
+    });
+  }
+);
+
+test('does not buy because does not have enough balance', async () => {
+  const buyOrderMock = jest.spyOn(apiBinanceModule, 'buyOrder');
+
+  await executeQuoteOperation({
+    strategyData: {
+      minNotional: 10,
+      assets: {
+        [QUOTE_BASE_TICKER]: { totalValue: 0 },
+        BTC: {
+          totalValue: 300,
+        },
+        ETH: {
+          totalValue: 50,
+        },
+      },
+    } as any,
+    walletProportion: {
+      BTC: 100,
+      ETH: 50,
+    },
+  });
+
+  expect(buyOrderMock).not.toHaveBeenCalled();
+});
 
 test.each([
   [
@@ -129,7 +229,11 @@ test.each([
     {
       minNotional: 10,
       assets: {
-        [QUOTE_BASE_TICKER]: { totalValue: getEffectiveMinNotional(10) },
+        [QUOTE_BASE_TICKER]: {
+          totalValue: getEffectiveMinNotional({
+            strategyData: { minNotional: 10 } as any,
+          }),
+        },
       },
     },
     true,

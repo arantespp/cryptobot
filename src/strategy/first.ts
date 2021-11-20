@@ -1,6 +1,7 @@
 import {
   getStrategyData,
   StrategyData,
+  buyOrder,
   QUOTE_BASE_TICKER,
 } from '../api/binance';
 
@@ -91,8 +92,11 @@ export const getExtremeProportions = ({
 /**
  * Multiplied by 1.5 to have a margin for filters.
  */
-export const getEffectiveMinNotional = (minNotional: number) =>
-  minNotional * 1.5;
+export const getEffectiveMinNotional = ({
+  strategyData,
+}: {
+  strategyData: StrategyData;
+}) => strategyData.minNotional * 1.5;
 
 export const doesHaveEnoughBalance = ({
   strategyData,
@@ -101,8 +105,29 @@ export const doesHaveEnoughBalance = ({
 }) => {
   return (
     strategyData.assets[QUOTE_BASE_TICKER].totalValue >=
-    getEffectiveMinNotional(strategyData.minNotional)
+    getEffectiveMinNotional({ strategyData })
   );
+};
+
+export const executeQuoteOperation = async ({
+  strategyData,
+  walletProportion,
+}: {
+  strategyData: StrategyData;
+  walletProportion: WalletProportion;
+}) => {
+  if (!doesHaveEnoughBalance({ strategyData })) {
+    return false;
+  }
+
+  const { lowest } = getExtremeProportions({
+    strategyData,
+    walletProportion,
+  });
+
+  const quoteOrderQty = getEffectiveMinNotional({ strategyData });
+
+  await buyOrder({ quoteOrderQty, asset: lowest });
 };
 
 export const runFirstStrategy = async () => {
