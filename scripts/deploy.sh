@@ -1,3 +1,5 @@
+set -e
+
 SERVER_IP=54.161.159.172
 
 yarn run test

@@ -399,7 +399,7 @@ test.each([
     walletProportion,
   });
 
-  expect(extremeProportions).toEqual(result);
+  expect(extremeProportions).toMatchObject(result);
 });
 
 test.each([
