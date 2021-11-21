@@ -110,7 +110,7 @@ export const getExtremeProportions = ({
 
   debug({ highest, lowest, ratio, maxRatio, minRatio });
 
-  return { highest, lowest };
+  return { highest, lowest, ratio, currentWalletProportion };
 };
 
 /**
@@ -542,6 +542,30 @@ const sellBoughtAsset = async ({
   return order;
 };
 
+const getLowestBuyPricesFiltered = ({
+  strategyData,
+  walletProportion,
+  lowestBuyPrices,
+}: {
+  strategyData: StrategyData;
+  walletProportion: WalletProportion;
+  lowestBuyPrices: BuyOrderOnDatabase[];
+}) => {
+  const { ratio } = getExtremeProportions({ strategyData, walletProportion });
+
+  return (
+    lowestBuyPrices
+      /**
+       * Only return the items that have positive profit.
+       */
+      .filter((item) => calculateItemProfit({ item, strategyData }) > 0)
+      /**
+       * Return only that have positive proportion ratio.
+       */
+      .filter((item) => ratio[item.pk] > 0)
+  );
+};
+
 export const MIN_PROFIT = 2 / 100;
 
 export const executeAssetsOperation = async ({
@@ -555,25 +579,15 @@ export const executeAssetsOperation = async ({
 
   debug('Starting Assets Operation');
 
-  const { lowest } = getExtremeProportions({
+  const allLowestBuyPrices = await getAssetsBuyOrdersWithLowestBuyPrice({
+    strategyData,
+  });
+
+  const lowestBuyPrices = getLowestBuyPricesFiltered({
+    lowestBuyPrices: allLowestBuyPrices,
     strategyData,
     walletProportion,
   });
-
-  const lowestBuyPrices = (
-    await getAssetsBuyOrdersWithLowestBuyPrice({
-      strategyData,
-    })
-  )
-    /**
-     * Remove the lowest proportion ration because we don't want to sell it
-     * and after buy again.
-     */
-    .filter(({ pk }) => pk !== lowest)
-    /**
-     * Only return the items that have positive profit.
-     */
-    .filter((item) => calculateItemProfit({ item, strategyData }) > 0);
 
   if (lowestBuyPrices.length === 0) {
     debug('There are no profitable assets');
