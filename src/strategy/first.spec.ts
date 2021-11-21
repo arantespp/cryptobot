@@ -7,6 +7,8 @@ import {
   executeQuoteOperation,
   canUseDepositsBalance,
   getAssetAndQuotePropertiesFromBuyOrder,
+  getMostProfitableAsset,
+  formatAssetQuantity,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
@@ -86,6 +88,101 @@ test.skip.each([
       asset: assetToBuy,
       quoteOrderQty,
     });
+  }
+);
+
+test.each([
+  [
+    0.123456789,
+    [
+      {
+        filterType: 'LOT_SIZE',
+        minQty: '0.00001000',
+        maxQty: '9000.00000000',
+        stepSize: '0.00001000',
+      },
+    ],
+    0.12345,
+  ],
+  [
+    1234.123456789,
+    [
+      {
+        filterType: 'LOT_SIZE',
+        minQty: '0.00001000',
+        maxQty: '9000.00000000',
+        stepSize: '0.00001000',
+      },
+    ],
+    1234.12345,
+  ],
+  [
+    0.00000789,
+    [
+      {
+        filterType: 'LOT_SIZE',
+        minQty: '0.00001000',
+        maxQty: '9000.00000000',
+        stepSize: '0.00001000',
+      },
+    ],
+    0,
+  ],
+])('formatAssetQuantity %#', (assetQuantity, filters, result) => {
+  expect(formatAssetQuantity({ assetQuantity, filters: filters as any })).toBe(
+    result
+  );
+});
+
+test.each([
+  [
+    {
+      assets: {
+        BTC: {
+          price: 1010,
+        },
+        ETH: {
+          price: 110,
+        },
+        ADA: {
+          price: 20,
+        },
+      },
+    },
+    [
+      { pk: 'BTC', quotePrice: 1000 },
+      { pk: 'ADA', quotePrice: 10 },
+      { pk: 'ETH', quotePrice: 100 },
+    ],
+    { positionOfTheMostProfitableItem: 1 },
+  ],
+  [
+    {
+      assets: {
+        BTC: {
+          price: 1,
+        },
+        ETH: {
+          price: 110,
+        },
+        ADA: {
+          price: 20,
+        },
+      },
+    },
+    [
+      { pk: 'BTC', quotePrice: 1000 },
+      { pk: 'ADA', quotePrice: 10 },
+      { pk: 'ETH', quotePrice: 100 },
+    ],
+    { positionOfTheMostProfitableItem: 1 },
+  ],
+])(
+  'getMostProfitableAsset',
+  (strategyData, items, { positionOfTheMostProfitableItem }) => {
+    expect(getMostProfitableAsset({ strategyData, items } as any)).toEqual(
+      items[positionOfTheMostProfitableItem]
+    );
   }
 );
 

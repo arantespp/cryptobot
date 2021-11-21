@@ -1,11 +1,13 @@
 import { Order } from '@binance/connector';
 import Debug from 'debug';
+import { Decimal } from 'decimal.js';
 import cron from 'node-cron';
 
 import {
   getStrategyData,
   StrategyData,
   buyOrder,
+  sellOrder,
   QUOTE_BASE_TICKER,
 } from '../api/binance';
 import * as database from '../api/database';
@@ -246,7 +248,7 @@ export const executeQuoteOperation = async ({
 }: {
   strategyData: StrategyData;
   walletProportion: WalletProportion;
-}) => {
+}): Promise<boolean> => {
   const debug = Debug('CryptoBot:executeQuoteOperation');
 
   debug('Starting Quote Operation');
@@ -289,9 +291,193 @@ export const executeQuoteOperation = async ({
   return true;
 };
 
-export const executeAssetsOperation = async () => {
+const getTickersFromStrategyData = ({
+  strategyData,
+}: {
+  strategyData: StrategyData;
+}) => Object.keys(strategyData.assets);
+
+type BuyItem = {
+  pk: string;
+  sk: string;
+  order: Order;
+  assetQuantity: number;
+  quotePrice: number;
+};
+
+const getAssetBuyOrdersWithLowestBuyPrice = async ({
+  asset,
+}: {
+  asset: string;
+}) => {
+  const items = await database.query<BuyItem>({
+    keyConditionExpression: 'pk = :pk',
+    expressionAttributeValues: { ':pk': asset },
+    indexName: 'pk-status-index',
+    scanIndexForward: false,
+    limit: 1,
+  });
+
+  const itemWithLowestBuyPrice = items[0];
+
+  return itemWithLowestBuyPrice;
+};
+
+const getAssetsBuyOrdersWithLowestBuyPrice = async ({
+  strategyData,
+}: {
+  strategyData: StrategyData;
+}) => {
+  const assets = getTickersFromStrategyData({ strategyData });
+
+  const lowestBuyPrices = await Promise.all(
+    assets.map((asset) => getAssetBuyOrdersWithLowestBuyPrice({ asset }))
+  );
+
+  return lowestBuyPrices.filter((item) => !!item);
+};
+
+const calculateItemProfit = ({
+  item,
+  strategyData,
+}: {
+  item: BuyItem;
+  strategyData: StrategyData;
+}) => {
+  const { quotePrice } = item;
+  const currentPrice = strategyData.assets[item.pk].price;
+  return (currentPrice - quotePrice) / quotePrice;
+};
+
+export const getMostProfitableAsset = ({
+  strategyData,
+  items,
+}: {
+  strategyData: StrategyData;
+  items: BuyItem[];
+}) => {
+  const mostProfitableAsset = items.reduce((acc, cur) => {
+    return calculateItemProfit({ strategyData, item: cur }) >
+      calculateItemProfit({ strategyData, item: acc })
+      ? cur
+      : acc;
+  }, items[0]);
+
+  return mostProfitableAsset;
+};
+
+export const formatAssetQuantity = ({
+  assetQuantity,
+  filters = [],
+}: {
+  filters: StrategyData['assets'][string]['filters'];
+  assetQuantity: number;
+}): number => {
+  let value = new Decimal(assetQuantity);
+
+  const lotSizeFilter = filters.find(
+    (filter) => filter?.filterType === 'LOT_SIZE'
+  );
+
+  if (lotSizeFilter && lotSizeFilter.filterType === 'LOT_SIZE') {
+    const stepSize = new Decimal(Number(lotSizeFilter.stepSize));
+    value = value.toDecimalPlaces(stepSize.decimalPlaces(), Decimal.ROUND_DOWN);
+
+    if (value.lessThan(Number(lotSizeFilter.minQty))) {
+      return 0;
+    }
+  }
+
+  return value.toNumber();
+};
+
+const sellBoughtAsset = async ({
+  item,
+  strategyData,
+}: {
+  item: BuyItem;
+  strategyData: StrategyData;
+}) => {
+  const debug = Debug('CryptoBot:sellBoughtAsset');
+
+  const asset = item.pk;
+
+  debug(`Selling bought asset ${asset}`);
+
+  const quantity = formatAssetQuantity({
+    assetQuantity: item.assetQuantity,
+    filters: strategyData.assets[asset].filters,
+  });
+
+  const order = await sellOrder({ asset, quantity });
+
+  console.log({ quantity, order });
+};
+
+export const MIN_PROFIT = 0.05;
+
+export const executeAssetsOperation = async ({
+  strategyData,
+  walletProportion,
+}: {
+  strategyData: StrategyData;
+  walletProportion: WalletProportion;
+}): Promise<boolean> => {
   const debug = Debug('CryptoBot:executeAssetsOperation');
+
   debug('Starting Assets Operation');
+
+  const { lowest } = getExtremeProportions({
+    strategyData,
+    walletProportion,
+  });
+
+  const lowestBuyPrices = (
+    await getAssetsBuyOrdersWithLowestBuyPrice({
+      strategyData,
+    })
+  )
+    /**
+     * Remove the lowest proportion ration because we don't want to sell it
+     * and after buy again.
+     */
+    .filter(({ pk }) => pk !== lowest)
+    /**
+     * Only return the items that have positive profit.
+     */
+    .filter((item) => calculateItemProfit({ item, strategyData }) > 0);
+
+  if (lowestBuyPrices.length === 0) {
+    debug('There are no profitable assets');
+    return false;
+  }
+
+  const mostProfitableAsset = getMostProfitableAsset({
+    strategyData,
+    items: lowestBuyPrices,
+  });
+
+  const profit = calculateItemProfit({
+    strategyData,
+    item: mostProfitableAsset,
+  });
+
+  debug({ mostProfitableAsset, profit });
+
+  if (profit < MIN_PROFIT) {
+    debug(`Profit is too low than the threshold value: ${MIN_PROFIT}`);
+    return false;
+  }
+
+  try {
+    await sellBoughtAsset({ strategyData, item: mostProfitableAsset });
+
+    return true;
+  } catch (error) {
+    debug('Cannot perform selling order. Error:');
+    console.error(error);
+    return false;
+  }
 };
 
 export const runFirstStrategy = async () => {
@@ -318,20 +504,28 @@ export const runFirstStrategy = async () => {
     debug('Quote Operation was not executed in the first time');
     debug('Executing Assets Operation');
 
-    await executeAssetsOperation();
-
-    debug('Executing Quote Operation for the second time');
-
-    executeQuoteOperation({
+    const wasAssetsOperationExecuted = await executeAssetsOperation({
       strategyData,
       walletProportion,
     });
+
+    if (wasAssetsOperationExecuted) {
+      debug('Executing Quote Operation for the second time');
+
+      executeQuoteOperation({
+        strategyData,
+        walletProportion,
+      });
+    }
   }
 
   debug('First Strategy Finished');
 };
 
 export const startStrategy = () => {
-  console.log('Starting Strategy' + isProduction ? ' in production mode' : '');
+  console.log(
+    'Starting Strategy' + (isProduction ? ' in production mode' : '')
+  );
+
   cron.schedule('* * * * *', runFirstStrategy);
 };

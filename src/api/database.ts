@@ -2,6 +2,7 @@ import {
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
+  QueryCommand,
   UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -43,21 +44,21 @@ type PrimaryKey = {
 type Item = PrimaryKey & { [key: string]: any };
 
 export const putItem = async ({ item }: { item: Item }) => {
-  const putItemCommand = new PutItemCommand({
+  const command = new PutItemCommand({
     TableName: TABLE_NAME,
     Item: marshall(item),
   });
 
-  return dynamoDb.send(putItemCommand);
+  return dynamoDb.send(command);
 };
 
 export const getItem = async <I extends Partial<Item>>(key: PrimaryKey) => {
-  const getItemCommand = new GetItemCommand({
+  const command = new GetItemCommand({
     TableName: TABLE_NAME,
     Key: marshall(key),
   });
 
-  const { Item = {} } = await dynamoDb.send(getItemCommand);
+  const { Item = {} } = await dynamoDb.send(command);
 
   return unmarshall(Item) as I;
 };
@@ -71,7 +72,7 @@ export const updateItem = async <I extends Partial<Item>>({
   updateExpression: string;
   expressionAttributeValues: { [key: string]: any };
 }) => {
-  const updateItemCommand = new UpdateItemCommand({
+  const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
     Key: marshall(key),
     UpdateExpression: updateExpression,
@@ -79,7 +80,34 @@ export const updateItem = async <I extends Partial<Item>>({
     ExpressionAttributeValues: marshall(expressionAttributeValues),
   });
 
-  const { Attributes = {} } = await dynamoDb.send(updateItemCommand);
+  const { Attributes = {} } = await dynamoDb.send(command);
 
   return unmarshall(Attributes) as I;
+};
+
+export const query = async <I extends Partial<Item>>({
+  expressionAttributeValues,
+  keyConditionExpression,
+  indexName,
+  scanIndexForward,
+  limit,
+}: {
+  keyConditionExpression: string;
+  expressionAttributeValues: { [key: string]: any };
+  indexName?: string;
+  scanIndexForward?: boolean;
+  limit?: number;
+}) => {
+  const command = new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: keyConditionExpression,
+    ExpressionAttributeValues: marshall(expressionAttributeValues),
+    IndexName: indexName,
+    ScanIndexForward: scanIndexForward,
+    Limit: limit,
+  });
+
+  const { Items = [] } = await dynamoDb.send(command);
+
+  return Items.map((item) => unmarshall(item) as I);
 };

@@ -189,12 +189,14 @@ export const buyOrder = async ({
 };
 
 export const sellOrder = async ({
-  symbol,
+  asset,
   quantity,
 }: {
-  symbol: string;
+  asset: string;
   quantity: number;
 }) => {
+  const symbol = getSymbolFromAsset(asset);
+
   const order = await client.newOrder(symbol, 'SELL', 'MARKET', {
     quantity,
   });
