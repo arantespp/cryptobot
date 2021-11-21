@@ -6,7 +6,7 @@ import {
   QUOTE_BASE_TICKER,
   executeQuoteOperation,
   canUseDepositsBalance,
-  getAssetAndQuotePropertiesFromBuyOrder,
+  getEffectiveAssetAndQuotePropertiesFromBuyOrder,
   getMostProfitableAsset,
   formatAssetQuantity,
 } from './first';
@@ -223,8 +223,10 @@ test.each([
     },
     { assetQuantity: 199.8, quotePrice: 7500 },
   ],
-])('getAssetAndQuotePropertiesFromBuyOrder %#', (order, result) => {
-  expect(getAssetAndQuotePropertiesFromBuyOrder(order as any)).toEqual(result);
+])('getEffectiveAssetAndQuotePropertiesFromBuyOrder %#', (order, result) => {
+  expect(getEffectiveAssetAndQuotePropertiesFromBuyOrder(order as any)).toEqual(
+    result
+  );
 });
 
 test('does not buy because does not have enough balance', async () => {

@@ -206,6 +206,19 @@ export const getEffectiveAssetAndQuotePropertiesFromBuyOrder = (
   return { assetQuantity, quotePrice };
 };
 
+type BaseOrderOnDatabase = {
+  pk: string;
+  sk: string;
+  order: Order;
+  assetQuantity: number;
+  quotePrice: number;
+};
+
+type BuyOrderOnDatabase = BaseOrderOnDatabase & {
+  status?: string;
+  usedDepositsBalance: boolean;
+};
+
 export const saveBuyOrder = async ({
   asset,
   order,
@@ -226,7 +239,7 @@ export const saveBuyOrder = async ({
 
   const status = `BUY_PRICE_${quotePrice}`;
 
-  const item = {
+  const item: BuyOrderOnDatabase = {
     pk: asset,
     sk: `ORDER_BUY_${date}`,
     status,
@@ -255,16 +268,22 @@ const updateWalletAssetsEarned = async ({
   const { assetQuantity } =
     getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
 
+  const { side } = order;
+
+  const quantity = side === 'BUY' ? assetQuantity : -assetQuantity;
+
   const data = await database.updateItem({
     key: { pk: 'WALLET', sk: 'CURRENT_EARNINGS' },
     updateExpression: 'ADD #asset :quantity',
     expressionAttributeValues: {
-      ':quantity': order.side === 'BUY' ? assetQuantity : -assetQuantity,
+      ':quantity': quantity,
     },
     expressionAttributeNames: {
       '#asset': asset,
     },
   });
+
+  debug({ side, quantity });
 
   debug(`Update ${asset} earnings: ${data[asset]}`);
 };
@@ -330,20 +349,12 @@ const getTickersFromStrategyData = ({
   strategyData: StrategyData;
 }) => Object.keys(strategyData.assets);
 
-type BuyItem = {
-  pk: string;
-  sk: string;
-  order: Order;
-  assetQuantity: number;
-  quotePrice: number;
-};
-
 const getAssetBuyOrdersWithLowestBuyPrice = async ({
   asset,
 }: {
   asset: string;
 }) => {
-  const items = await database.query<BuyItem>({
+  const items = await database.query<BuyOrderOnDatabase>({
     keyConditionExpression: 'pk = :pk',
     expressionAttributeValues: { ':pk': asset },
     indexName: 'pk-status-index',
@@ -374,7 +385,7 @@ const calculateItemProfit = ({
   item,
   strategyData,
 }: {
-  item: BuyItem;
+  item: BuyOrderOnDatabase;
   strategyData: StrategyData;
 }) => {
   const { quotePrice } = item;
@@ -387,7 +398,7 @@ export const getMostProfitableAsset = ({
   items,
 }: {
   strategyData: StrategyData;
-  items: BuyItem[];
+  items: BuyOrderOnDatabase[];
 }) => {
   const mostProfitableAsset = items.reduce((acc, cur) => {
     return calculateItemProfit({ strategyData, item: cur }) >
@@ -424,11 +435,73 @@ export const formatAssetQuantity = ({
   return value.toNumber();
 };
 
+type SellOrderOnDatabase = BaseOrderOnDatabase & { buyOrder: string };
+
+export const saveSellOrder = async ({
+  asset,
+  order,
+  buyItem,
+}: {
+  asset: string;
+  order: Order;
+  buyItem: BuyOrderOnDatabase;
+}) => {
+  const debug = Debug('CryptoBot:saveSellOrder');
+
+  debug('Saving sell order');
+
+  const date = new Date().toISOString();
+
+  const { assetQuantity, quotePrice } =
+    getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const item: SellOrderOnDatabase = {
+    pk: asset,
+    sk: `ORDER_SELL_${date}`,
+    order,
+    assetQuantity,
+    quotePrice,
+    buyOrder: [buyItem.pk, buyItem.sk].join('##'),
+  };
+
+  await database.putItem({ item });
+
+  debug(item);
+
+  return item;
+};
+
+export const updateBuyOrderStatus = async ({
+  buyItem,
+  sellItem,
+}: {
+  buyItem: BuyOrderOnDatabase;
+  sellItem: SellOrderOnDatabase;
+}) => {
+  const debug = Debug('CryptoBot:updateBuyOrderStatus');
+
+  debug('Updating buy order status');
+
+  /**
+   * By removing status, we can't query for the order thus it won't be sold.
+   */
+  await database.updateItem({
+    key: { pk: buyItem.pk, sk: buyItem.sk },
+    updateExpression: 'REMOVE #status SET sellOrder = :sellOrder',
+    expressionAttributeValues: {
+      ':sellOrder': [sellItem.pk, sellItem.sk].join('##'),
+    },
+    expressionAttributeNames: { '#status': 'status' },
+  });
+
+  debug(`Updated buy order status: ${buyItem.pk}${buyItem.sk}`);
+};
+
 const sellBoughtAsset = async ({
   item,
   strategyData,
 }: {
-  item: BuyItem;
+  item: BuyOrderOnDatabase;
   strategyData: StrategyData;
 }) => {
   const debug = Debug('CryptoBot:sellBoughtAsset');
@@ -444,14 +517,13 @@ const sellBoughtAsset = async ({
 
   const order = await sellOrder({ asset, quantity });
 
-  /**
-   * TODO
-   * - Save order to database
-   * - Update buy order origin status
-   * - Update assets quantity. How many assets was subtracted from the wallet
-   *   because the sell order?
-   */
-  console.log({ quantity, order });
+  debug(`Sold ${quantity} ${asset}`);
+
+  const sellItem = await saveSellOrder({ asset, order, buyItem: item });
+
+  await updateBuyOrderStatus({ buyItem: item, sellItem });
+
+  return order;
 };
 
 export const MIN_PROFIT = 0.05;
@@ -512,7 +584,12 @@ export const executeAssetsOperation = async ({
   }
 
   try {
-    await sellBoughtAsset({ strategyData, item: mostProfitableAsset });
+    const order = await sellBoughtAsset({
+      strategyData,
+      item: mostProfitableAsset,
+    });
+
+    await updateWalletAssetsEarned({ asset: lowest, order });
 
     return true;
   } catch (error) {
@@ -569,5 +646,7 @@ export const startStrategy = () => {
     'Starting Strategy' + (isProduction ? ' in production mode' : '')
   );
 
-  cron.schedule('* * * * *', runFirstStrategy);
+  runFirstStrategy();
+
+  // cron.schedule('* * * * *', runFirstStrategy);
 };
