@@ -220,11 +220,9 @@ type BuyOrderOnDatabase = BaseOrderOnDatabase & {
 };
 
 export const saveBuyOrder = async ({
-  asset,
   order,
   usedDepositsBalance,
 }: {
-  asset: string;
   order: Order;
   usedDepositsBalance: boolean;
 }) => {
@@ -236,6 +234,8 @@ export const saveBuyOrder = async ({
 
   const { assetQuantity, quotePrice } =
     getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const asset = getAssetFromOrder({ order });
 
   const status = `BUY_PRICE_${quotePrice}`;
 
@@ -256,17 +256,17 @@ export const saveBuyOrder = async ({
   debug(item);
 };
 
-const updateWalletAssetsEarned = async ({
-  asset,
-  order,
-}: {
-  asset: string;
-  order: Order;
-}) => {
+export const getAssetFromOrder = ({ order }: { order: Order }) => {
+  return order.symbol.replace(QUOTE_BASE_TICKER, '');
+};
+
+const updateWalletAssetsEarned = async ({ order }: { order: Order }) => {
   const debug = Debug('CryptoBot:updateWalletAssetsEarned');
 
   const { assetQuantity } =
     getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const asset = getAssetFromOrder({ order });
 
   const { side } = order;
 
@@ -286,6 +286,10 @@ const updateWalletAssetsEarned = async ({
   debug({ side, quantity });
 
   debug(`Update ${asset} earnings: ${data[asset]}`);
+};
+
+const wasOrderSuccessful = ({ order }: { order: Order }) => {
+  return order.status === 'FILLED';
 };
 
 /**
@@ -324,8 +328,12 @@ export const executeQuoteOperation = async ({
 
   debug(order);
 
+  if (!wasOrderSuccessful({ order })) {
+    debug('Buy order was not successful');
+    return false;
+  }
+
   await saveBuyOrder({
-    asset,
     order,
     usedDepositsBalance: canUseDepositsBalanceBool,
   });
@@ -335,7 +343,7 @@ export const executeQuoteOperation = async ({
     await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
   } else {
     debug('Cannot update used deposits balance. Updating assets earnings');
-    await updateWalletAssetsEarned({ asset, order });
+    await updateWalletAssetsEarned({ order });
   }
 
   debug('Quote Operation Finished');
@@ -381,7 +389,17 @@ const getAssetsBuyOrdersWithLowestBuyPrice = async ({
   return lowestBuyPrices.filter((item) => !!item);
 };
 
-const calculateItemProfit = ({
+const getAssetCurrentPrice = ({
+  asset,
+  strategyData,
+}: {
+  asset: string;
+  strategyData: StrategyData;
+}) => {
+  return strategyData.assets[asset].price;
+};
+
+export const calculateItemProfit = ({
   item,
   strategyData,
 }: {
@@ -389,7 +407,7 @@ const calculateItemProfit = ({
   strategyData: StrategyData;
 }) => {
   const { quotePrice } = item;
-  const currentPrice = strategyData.assets[item.pk].price;
+  const currentPrice = getAssetCurrentPrice({ asset: item.pk, strategyData });
   return (currentPrice - quotePrice) / quotePrice;
 };
 
@@ -438,11 +456,9 @@ export const formatAssetQuantity = ({
 type SellOrderOnDatabase = BaseOrderOnDatabase & { buyOrder: string };
 
 export const saveSellOrder = async ({
-  asset,
   order,
   buyItem,
 }: {
-  asset: string;
   order: Order;
   buyItem: BuyOrderOnDatabase;
 }) => {
@@ -454,6 +470,8 @@ export const saveSellOrder = async ({
 
   const { assetQuantity, quotePrice } =
     getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const asset = getAssetFromOrder({ order });
 
   const item: SellOrderOnDatabase = {
     pk: asset,
@@ -517,16 +535,12 @@ const sellBoughtAsset = async ({
 
   const order = await sellOrder({ asset, quantity });
 
-  debug(`Sold ${quantity} ${asset}`);
-
-  const sellItem = await saveSellOrder({ asset, order, buyItem: item });
-
-  await updateBuyOrderStatus({ buyItem: item, sellItem });
+  debug(order);
 
   return order;
 };
 
-export const MIN_PROFIT = 0.05;
+export const MIN_PROFIT = 0.022;
 
 export const executeAssetsOperation = async ({
   strategyData,
@@ -574,22 +588,48 @@ export const executeAssetsOperation = async ({
     item: mostProfitableAsset,
   });
 
-  debug({ mostProfitableAsset, greatestProfit });
+  debug({
+    mostProfitableAsset,
+    buyPrice: mostProfitableAsset.quotePrice,
+    greatestProfit,
+    currentPrice: getAssetCurrentPrice({
+      asset: mostProfitableAsset.pk,
+      strategyData,
+    }),
+  });
 
   if (greatestProfit < MIN_PROFIT) {
     debug(
-      `Greatest profit (${greatestProfit}) is too low than the minimal profit: ${MIN_PROFIT}`
+      `Greatest ${mostProfitableAsset.pk} profit (${greatestProfit}) is too low than the minimal profit: ${MIN_PROFIT}`
     );
     return false;
   }
 
   try {
+    /**
+     * Asset that was bought and will be sold.
+     */
+    const asset = mostProfitableAsset.pk;
+
     const order = await sellBoughtAsset({
       strategyData,
       item: mostProfitableAsset,
     });
 
-    await updateWalletAssetsEarned({ asset: lowest, order });
+    if (!wasOrderSuccessful({ order })) {
+      debug(`Sell order was not successful`);
+      return false;
+    }
+
+    const sellItem = await saveSellOrder({
+      order,
+      buyItem: mostProfitableAsset,
+    });
+
+    await Promise.all([
+      updateBuyOrderStatus({ buyItem: mostProfitableAsset, sellItem }),
+      updateWalletAssetsEarned({ order }),
+    ]);
 
     return true;
   } catch (error) {
@@ -628,14 +668,7 @@ export const runFirstStrategy = async () => {
       walletProportion,
     });
 
-    if (wasAssetsOperationExecuted) {
-      debug('Executing Quote Operation for the second time');
-
-      executeQuoteOperation({
-        strategyData,
-        walletProportion,
-      });
-    }
+    debug({ wasAssetsOperationExecuted });
   }
 
   debug('First Strategy Finished');
@@ -646,7 +679,5 @@ export const startStrategy = () => {
     'Starting Strategy' + (isProduction ? ' in production mode' : '')
   );
 
-  runFirstStrategy();
-
-  // cron.schedule('* * * * *', runFirstStrategy);
+  cron.schedule('* * * * *', runFirstStrategy);
 };

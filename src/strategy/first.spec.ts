@@ -9,6 +9,8 @@ import {
   getEffectiveAssetAndQuotePropertiesFromBuyOrder,
   getMostProfitableAsset,
   formatAssetQuantity,
+  calculateItemProfit,
+  getAssetFromOrder,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
@@ -90,6 +92,38 @@ test.skip.each([
     });
   }
 );
+
+test.each(['ETH', 'ADA', 'BTC'])('getAssetFromOrder %s', (asset) => {
+  const order = { symbol: `${asset}${QUOTE_BASE_TICKER}` } as any;
+  expect(getAssetFromOrder({ order })).toBe(asset);
+});
+
+test.each([
+  [
+    { pk: 'BTC', quotePrice: 100 },
+    {
+      assets: {
+        BTC: {
+          price: 1000,
+        },
+      },
+    },
+    9,
+  ],
+  [
+    { pk: 'BTC', quotePrice: 100 },
+    {
+      assets: {
+        BTC: {
+          price: 100,
+        },
+      },
+    },
+    0,
+  ],
+])('calculateItemProfit %#', (item, strategyData, result) => {
+  expect(calculateItemProfit({ item, strategyData } as any)).toEqual(result);
+});
 
 test.each([
   [
