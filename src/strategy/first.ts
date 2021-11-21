@@ -1,7 +1,6 @@
 import { Order } from '@binance/connector';
 import Debug from 'debug';
 import { Decimal } from 'decimal.js';
-import cron from 'node-cron';
 
 import {
   getStrategyData,
@@ -692,24 +691,4 @@ export const runFirstStrategy = async () => {
   }
 
   debug('First Strategy Finished');
-};
-
-const errorHandlerWrapper = (fn: () => Promise<any>) => async () => {
-  try {
-    await fn();
-  } catch (error: any) {
-    if (error?.response?.data) {
-      console.error(error.response.data);
-    } else {
-      console.error(error);
-    }
-  }
-};
-
-export const startStrategy = () => {
-  console.log(
-    'Starting Strategy' + (isProduction ? ' in production mode' : '')
-  );
-
-  cron.schedule('* * * * *', errorHandlerWrapper(runFirstStrategy));
 };

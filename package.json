@@ -18,6 +18,7 @@
     "@aws-sdk/client-dynamodb": "^3.41.0",
     "@aws-sdk/util-dynamodb": "^3.42.0",
     "@binance/connector": "^1.5.0",
+    "date-fns": "^2.26.0",
     "debug": "^4.3.2",
     "decimal.js": "^10.3.1",
     "deepmerge": "^4.2.2",

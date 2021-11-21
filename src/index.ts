@@ -1,5 +1,5 @@
 import './config';
 
-import { startStrategy } from './strategy/first';
+import { startStrategy } from './strategy/strategy';
 
 startStrategy();
