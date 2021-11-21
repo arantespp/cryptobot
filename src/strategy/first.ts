@@ -563,6 +563,15 @@ const getLowestBuyPricesFiltered = ({
        * Return only that have positive proportion ratio.
        */
       .filter((item) => ratio[item.pk] > 0)
+      /**
+       * Don't sell assets that have totalValue less than
+       * 10 x effective minNotional.
+       */
+      .filter(
+        (item) =>
+          strategyData.assets[item.pk].totalValue >
+          10 * getEffectiveMinNotional({ strategyData })
+      )
   );
 };
 
