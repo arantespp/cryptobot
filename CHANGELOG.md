@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/arantespp/cryptobot/compare/v1.2.0...v1.3.0) (2021-11-21)
+
+
+### Features
+
+* add deploy script ([27ca0ea](https://github.com/arantespp/cryptobot/commit/27ca0ea9ac88eefd48e08cce9b492864ec5b12fd))
+
 ## [1.2.0](https://github.com/arantespp/cryptobot/compare/v1.1.0...v1.2.0) (2021-11-21)
 
 
