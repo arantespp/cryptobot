@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://github.com/arantespp/cryptobot/compare/v1.5.0...v1.5.1) (2021-11-21)
+
+
+### Bug Fixes
+
+* filter lowest buys by ration ([92269fe](https://github.com/arantespp/cryptobot/commit/92269fe3fc257559fd3cfa033fac2979679b00fe))
+
 ## [1.5.0](https://github.com/arantespp/cryptobot/compare/v1.4.0...v1.5.0) (2021-11-21)
 
 
