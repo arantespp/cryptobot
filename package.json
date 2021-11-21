@@ -1,12 +1,13 @@
 {
   "name": "cryptobot",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
     "build": "tsup",
     "release": "standard-version",
+    "deploy": "sh ./scripts/deploy.sh",
     "start": "ts-node src/index.ts",
     "start:production": "pm2 start ecosystem.config.js --env production"
   },

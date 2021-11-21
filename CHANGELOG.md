@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/arantespp/cryptobot/compare/v1.1.0...v1.2.0) (2021-11-21)
+
+
+### Features
+
+* add asset earnings ([2ec53a0](https://github.com/arantespp/cryptobot/commit/2ec53a0ccf90c1e107e40068289df76480b6d9ed))
+* finished sell orders ([b50c886](https://github.com/arantespp/cryptobot/commit/b50c8860cc4b4e21da38752b12e9b5895b1f9ae2))
+
+
+### Bug Fixes
+
+* debug message ([0752103](https://github.com/arantespp/cryptobot/commit/0752103f1db43f4f1c39f35261422510ae5da72c))
+* order and asset args inconsistency ([1f8a12e](https://github.com/arantespp/cryptobot/commit/1f8a12e889a503df47c2a90042ec224620bfafb9))
+* remove unused variable ([e10d692](https://github.com/arantespp/cryptobot/commit/e10d6923c0a81d1dc8e87e2f4b472b34120f8dd6))
+
 ## 1.1.0 (2021-11-21)
 
 
