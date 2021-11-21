@@ -173,7 +173,9 @@ export const updateUsedDepositsBalance = async (amount: number) => {
 
 export const TRADE_FEE = 0.001;
 
-export const getAssetAndQuotePropertiesFromBuyOrder = (order: Order) => {
+export const getEffectiveAssetAndQuotePropertiesFromBuyOrder = (
+  order: Order
+) => {
   const debug = Debug('CryptoBot:getAssetAndQuotePropertiesFromBuyOrder');
 
   const fills = order.fills.map((fill) => ({
@@ -220,7 +222,7 @@ export const saveBuyOrder = async ({
   const date = new Date().toISOString();
 
   const { assetQuantity, quotePrice } =
-    getAssetAndQuotePropertiesFromBuyOrder(order);
+    getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
 
   const status = `BUY_PRICE_${quotePrice}`;
 
@@ -239,6 +241,32 @@ export const saveBuyOrder = async ({
   await database.putItem({ item });
 
   debug(item);
+};
+
+const updateWalletAssetsEarned = async ({
+  asset,
+  order,
+}: {
+  asset: string;
+  order: Order;
+}) => {
+  const debug = Debug('CryptoBot:updateWalletAssetsEarned');
+
+  const { assetQuantity } =
+    getEffectiveAssetAndQuotePropertiesFromBuyOrder(order);
+
+  const data = await database.updateItem({
+    key: { pk: 'WALLET', sk: 'CURRENT_EARNINGS' },
+    updateExpression: 'ADD #asset :quantity',
+    expressionAttributeValues: {
+      ':quantity': order.side === 'BUY' ? assetQuantity : -assetQuantity,
+    },
+    expressionAttributeNames: {
+      '#asset': asset,
+    },
+  });
+
+  debug(`Update ${asset} earnings: ${data[asset]}`);
 };
 
 /**
@@ -271,12 +299,14 @@ export const executeQuoteOperation = async ({
 
   debug({ lowest, highest, quoteOrderQty, canUseDepositsBalanceBool });
 
-  const order = await buyOrder({ quoteOrderQty, asset: lowest });
+  const asset = lowest;
+
+  const order = await buyOrder({ quoteOrderQty, asset });
 
   debug(order);
 
   await saveBuyOrder({
-    asset: lowest,
+    asset,
     order,
     usedDepositsBalance: canUseDepositsBalanceBool,
   });
@@ -285,10 +315,8 @@ export const executeQuoteOperation = async ({
     debug('Updating used deposits balance');
     await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
   } else {
-    debug('Cannot update used deposits balance');
-    /**
-     * TODO: update assets quantity.
-     */
+    debug('Cannot update used deposits balance. Updating assets earnings');
+    await updateWalletAssetsEarned({ asset, order });
   }
 
   debug('Quote Operation Finished');

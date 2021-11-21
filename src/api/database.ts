@@ -67,10 +67,12 @@ export const updateItem = async <I extends Partial<Item>>({
   key,
   updateExpression,
   expressionAttributeValues,
+  expressionAttributeNames,
 }: {
   key: PrimaryKey;
   updateExpression: string;
-  expressionAttributeValues: { [key: string]: any };
+  expressionAttributeValues?: { [key: string]: any };
+  expressionAttributeNames?: { [key: string]: string };
 }) => {
   const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
@@ -78,6 +80,7 @@ export const updateItem = async <I extends Partial<Item>>({
     UpdateExpression: updateExpression,
     ReturnValues: 'ALL_NEW',
     ExpressionAttributeValues: marshall(expressionAttributeValues),
+    ExpressionAttributeNames: expressionAttributeNames,
   });
 
   const { Attributes = {} } = await dynamoDb.send(command);
