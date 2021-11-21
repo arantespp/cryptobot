@@ -286,6 +286,9 @@ export const executeQuoteOperation = async ({
     await updateUsedDepositsBalance(Number(order.cummulativeQuoteQty));
   } else {
     debug('Cannot update used deposits balance');
+    /**
+     * TODO: update assets quantity.
+     */
   }
 
   debug('Quote Operation Finished');
@@ -413,6 +416,13 @@ const sellBoughtAsset = async ({
 
   const order = await sellOrder({ asset, quantity });
 
+  /**
+   * TODO
+   * - Save order to database
+   * - Update buy order origin status
+   * - Update assets quantity. How many assets was subtracted from the wallet
+   *   because the sell order?
+   */
   console.log({ quantity, order });
 };
 
@@ -459,15 +469,17 @@ export const executeAssetsOperation = async ({
     items: lowestBuyPrices,
   });
 
-  const profit = calculateItemProfit({
+  const greatestProfit = calculateItemProfit({
     strategyData,
     item: mostProfitableAsset,
   });
 
-  debug({ mostProfitableAsset, profit });
+  debug({ mostProfitableAsset, greatestProfit });
 
-  if (profit < MIN_PROFIT) {
-    debug(`Profit is too low than the threshold value: ${MIN_PROFIT}`);
+  if (greatestProfit < MIN_PROFIT) {
+    debug(
+      `Greatest profit (${greatestProfit}) is too low than the minimal profit: ${MIN_PROFIT}`
+    );
     return false;
   }
 
