@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/arantespp/cryptobot/compare/v1.4.0...v1.5.0) (2021-11-21)
+
+
+### Features
+
+* add SHIB XLM and FTM ([586e2a8](https://github.com/arantespp/cryptobot/commit/586e2a8773768f51c68f3e7f43120b31a019efc1))
+
 ## [1.4.0](https://github.com/arantespp/cryptobot/compare/v1.3.0...v1.4.0) (2021-11-21)
 
 
