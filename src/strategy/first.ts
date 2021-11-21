@@ -386,7 +386,9 @@ const getAssetsBuyOrdersWithLowestBuyPrice = async ({
     assets.map((asset) => getAssetBuyOrdersWithLowestBuyPrice({ asset }))
   );
 
-  return lowestBuyPrices.filter((item) => !!item);
+  const items = lowestBuyPrices.filter((item) => !!item);
+
+  return items;
 };
 
 const getAssetCurrentPrice = ({
@@ -540,7 +542,7 @@ const sellBoughtAsset = async ({
   return order;
 };
 
-export const MIN_PROFIT = 0.022;
+export const MIN_PROFIT = 2 / 100;
 
 export const executeAssetsOperation = async ({
   strategyData,
@@ -606,11 +608,6 @@ export const executeAssetsOperation = async ({
   }
 
   try {
-    /**
-     * Asset that was bought and will be sold.
-     */
-    const asset = mostProfitableAsset.pk;
-
     const order = await sellBoughtAsset({
       strategyData,
       item: mostProfitableAsset,
