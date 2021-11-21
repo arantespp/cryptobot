@@ -171,12 +171,14 @@ export const updateUsedDepositsBalance = async (amount: number) => {
   debug({ newUsed: used, amount });
 };
 
+export const TRADE_FEE = 0.001;
+
 export const getAssetAndQuotePropertiesFromBuyOrder = (order: Order) => {
   const debug = Debug('CryptoBot:getAssetAndQuotePropertiesFromBuyOrder');
 
   const fills = order.fills.map((fill) => ({
     ...fill,
-    effectiveQuantity: Number(fill.qty) - Number(fill.commission),
+    effectiveQuantity: Number(fill.qty) * (1 - TRADE_FEE),
   }));
 
   /**

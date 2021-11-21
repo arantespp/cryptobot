@@ -202,26 +202,26 @@ test.each([
 
 test.each([
   [
-    { fills: [{ price: 10000, qty: 100, commission: 10 }] },
-    { assetQuantity: 90, quotePrice: 10000 },
+    { fills: [{ price: 10000, qty: 100 }] },
+    { assetQuantity: 99.9, quotePrice: 10000 },
   ],
   [
     {
       fills: [
-        { price: 10000, qty: 100, commission: 10 },
-        { price: 10000, qty: 100, commission: 10 },
+        { price: 10000, qty: 100 },
+        { price: 10000, qty: 100 },
       ],
     },
-    { assetQuantity: 180, quotePrice: 10000 },
+    { assetQuantity: 199.8, quotePrice: 10000 },
   ],
   [
     {
       fills: [
-        { price: 10000, qty: 100, commission: 10 },
-        { price: 5000, qty: 100, commission: 10 },
+        { price: 10000, qty: 100 },
+        { price: 5000, qty: 100 },
       ],
     },
-    { assetQuantity: 180, quotePrice: 7500 },
+    { assetQuantity: 199.8, quotePrice: 7500 },
   ],
 ])('getAssetAndQuotePropertiesFromBuyOrder %#', (order, result) => {
   expect(getAssetAndQuotePropertiesFromBuyOrder(order as any)).toEqual(result);
