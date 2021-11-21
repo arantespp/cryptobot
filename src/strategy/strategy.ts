@@ -28,5 +28,5 @@ export const startStrategy = () => {
 
   schedule('* * * * *', runFirstStrategy);
 
-  schedule('59 * * * *', updateEarningsSnapshot);
+  schedule('15 59 * * * *', updateEarningsSnapshot);
 };

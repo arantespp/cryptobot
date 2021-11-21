@@ -15,6 +15,12 @@ import { isProduction } from '../config';
 
 import { WALLET } from './wallet';
 
+import {
+  MIN_NOTIONAL_MULTIPLIER,
+  MIN_PROFIT,
+  TRADE_FEE,
+} from './strategy.config';
+
 export { QUOTE_BASE_TICKER };
 
 type WalletProportion = { [asset: string]: number };
@@ -119,7 +125,7 @@ export const getEffectiveMinNotional = ({
   strategyData,
 }: {
   strategyData: StrategyData;
-}) => strategyData.minNotional * 1.5;
+}) => strategyData.minNotional * MIN_NOTIONAL_MULTIPLIER;
 
 export const doesHaveEnoughBalance = ({
   strategyData,
@@ -169,8 +175,6 @@ export const updateUsedDepositsBalance = async (amount: number) => {
 
   debug({ newUsed: used, amount });
 };
-
-export const TRADE_FEE = 0.001;
 
 export const getEffectiveAssetAndQuotePropertiesFromBuyOrder = (
   order: Order
@@ -573,8 +577,6 @@ const getLowestBuyPricesFiltered = ({
       )
   );
 };
-
-export const MIN_PROFIT = 2 / 100;
 
 export const executeAssetsOperation = async ({
   strategyData,
