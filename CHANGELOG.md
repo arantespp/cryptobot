@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/arantespp/cryptobot/compare/v1.3.0...v1.4.0) (2021-11-21)
+
+
+### Features
+
+* add vet and matic ([faa70a7](https://github.com/arantespp/cryptobot/commit/faa70a7f81436fafec7c1697088f0458503b60b7))
+
 ## [1.3.0](https://github.com/arantespp/cryptobot/compare/v1.2.0...v1.3.0) (2021-11-21)
 
 
