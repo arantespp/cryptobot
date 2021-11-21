@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/arantespp/cryptobot/compare/v1.6.0...v1.7.0) (2021-11-21)
+
+
+### Features
+
+* add earnings snapshot ([6223c43](https://github.com/arantespp/cryptobot/commit/6223c43a039b5b7bf97b72969376d3f622da4e67))
+
 ## [1.6.0](https://github.com/arantespp/cryptobot/compare/v1.5.2...v1.6.0) (2021-11-21)
 
 
