@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/arantespp/cryptobot/compare/v1.8.2...v1.9.0) (2021-11-23)
+
+
+### Features
+
+* update profit min percentage ([15e53d8](https://github.com/arantespp/cryptobot/commit/15e53d8ba063ca510a7982799f0b115356f488b2))
+
 ### [1.8.2](https://github.com/arantespp/cryptobot/compare/v1.8.1...v1.8.2) (2021-11-23)
 
 
