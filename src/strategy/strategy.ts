@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 
+import { slack } from '../api/slack';
+
 import { isProduction } from '../config';
 
 import { runFirstStrategy } from './first';
@@ -22,9 +24,12 @@ const schedule = (cronExpression: string, fn: () => void) => {
 };
 
 export const startStrategy = () => {
-  console.log(
-    'Starting Strategy' + (isProduction ? ' in production mode' : '')
-  );
+  const message =
+    'Starting Strategy' + (isProduction ? ' in production mode' : '');
+
+  console.log(message);
+
+  slack.send(message);
 
   schedule('0,30 * * * * *', runFirstStrategy);
 

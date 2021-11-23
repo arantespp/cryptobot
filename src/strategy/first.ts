@@ -10,6 +10,7 @@ import {
   QUOTE_BASE_TICKER,
 } from '../api/binance';
 import * as database from '../api/database';
+import { slack } from '../api/slack';
 
 import { isProduction } from '../config';
 
@@ -261,6 +262,8 @@ export const saveBuyOrder = async ({
   await database.putItem({ item });
 
   debug(item);
+
+  return item;
 };
 
 export const getAssetFromOrder = ({ order }: { order: Order }) => {
@@ -340,10 +343,14 @@ export const executeQuoteOperation = async ({
     return false;
   }
 
-  await saveBuyOrder({
+  const buyItem = await saveBuyOrder({
     order,
     usedDepositsBalance: canUseDepositsBalanceBool,
   });
+
+  await slack.send(
+    `${buyItem.assetQuantity} of ${asset} was brought by ${buyItem.quotePrice}`
+  );
 
   if (canUseDepositsBalanceBool) {
     debug('Updating used deposits balance');
@@ -651,7 +658,14 @@ export const executeAssetsOperation = async ({
       buyItem: mostProfitableAsset,
     });
 
+    const profit = Math.round(
+      (sellItem.quotePrice / mostProfitableAsset.quotePrice - 1) * 100
+    );
+
     await Promise.all([
+      slack.send(
+        `${sellItem.assetQuantity} of ${sellItem.pk} was sold by ${sellItem.quotePrice}. It was bought by ${mostProfitableAsset.quotePrice} (profit of ${profit}%).`
+      ),
       updateBuyOrderStatus({ buyItem: mostProfitableAsset, sellItem }),
       updateWalletAssetsEarned({ order }),
     ]);
