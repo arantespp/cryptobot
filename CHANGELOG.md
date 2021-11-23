@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/arantespp/cryptobot/compare/v1.9.0...v1.10.0) (2021-11-23)
+
+
+### Features
+
+* add AVAX, DOGE, and DOT ([5866dda](https://github.com/arantespp/cryptobot/commit/5866ddafac000daa00f73e95e5d8e4f6265d4aa6))
+
 ## [1.9.0](https://github.com/arantespp/cryptobot/compare/v1.8.2...v1.9.0) (2021-11-23)
 
 
