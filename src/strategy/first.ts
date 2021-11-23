@@ -161,7 +161,11 @@ export const canUseDepositsBalance = async (amount: number) => {
 
   debug({ sumDeposits, used, remaining, canUse });
 
-  return canUse;
+  if (remaining < amount) {
+    return false;
+  }
+
+  return true;
 };
 
 export const updateUsedDepositsBalance = async (amount: number) => {

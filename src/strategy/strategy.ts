@@ -26,7 +26,7 @@ export const startStrategy = () => {
     'Starting Strategy' + (isProduction ? ' in production mode' : '')
   );
 
-  schedule('* * * * *', runFirstStrategy);
+  schedule('0,30 * * * * *', runFirstStrategy);
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
