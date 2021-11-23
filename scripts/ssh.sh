@@ -1,0 +1,1 @@
+ssh -i ~/.ssh/arantespp-personal-aws.pem ubuntu@54.161.159.172

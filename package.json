@@ -9,7 +9,9 @@
     "release": "standard-version && git push --follow-tags origin main",
     "deploy": "sh ./scripts/deploy.sh",
     "start": "ts-node src/index.ts",
-    "start:production": "pm2 start ecosystem.config.js --env production"
+    "start:production": "pm2 start ecosystem.config.js --env production",
+    "ssh": "sh scripts/ssh.sh",
+    "logs": "sh scripts/logs.sh"
   },
   "keywords": [],
   "author": "Pedro Arantes",

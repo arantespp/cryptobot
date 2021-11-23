@@ -360,7 +360,7 @@ const getTickersFromStrategyData = ({
   strategyData: StrategyData;
 }) => Object.keys(strategyData.assets);
 
-const getAssetBuyOrdersWithLowestBuyPrice = async ({
+export const getAssetBuyOrdersWithLowestBuyPrice = async ({
   asset,
 }: {
   asset: string;
@@ -369,7 +369,7 @@ const getAssetBuyOrdersWithLowestBuyPrice = async ({
     keyConditionExpression: 'pk = :pk',
     expressionAttributeValues: { ':pk': asset },
     indexName: 'pk-status-index',
-    scanIndexForward: false,
+    scanIndexForward: true,
     limit: 1,
   });
 

@@ -11,6 +11,7 @@ import {
   formatAssetQuantity,
   calculateItemProfit,
   getAssetFromOrder,
+  getAssetBuyOrdersWithLowestBuyPrice,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
@@ -18,6 +19,19 @@ import * as databaseModule from '../api/database';
 
 jest.mock('../api/binance');
 jest.mock('../api/database');
+
+test('getAssetBuyOrdersWithLowestBuyPrice', async () => {
+  const buyOrderMock = jest
+    .spyOn(databaseModule, 'query')
+    .mockResolvedValueOnce([]);
+
+  const asset = 'BTC';
+  await getAssetBuyOrdersWithLowestBuyPrice({ asset });
+
+  expect(buyOrderMock).toHaveBeenCalledWith(
+    expect.objectContaining({ scanIndexForward: true, limit: 1 })
+  );
+});
 
 test.skip.each([
   [
