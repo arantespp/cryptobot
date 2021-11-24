@@ -586,7 +586,7 @@ const getLowestBuyPricesFiltered = ({
       .filter(
         (item) =>
           strategyData.assets[item.pk].totalValue >
-          10 * getEffectiveMinNotional({ strategyData })
+          20 * getEffectiveMinNotional({ strategyData })
       )
   );
 };
