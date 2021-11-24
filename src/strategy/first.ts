@@ -349,7 +349,9 @@ export const executeQuoteOperation = async ({
   });
 
   await slack.send(
-    `${buyItem.assetQuantity} of ${asset} was brought by ${buyItem.quotePrice}`
+    `${buyItem.assetQuantity} of ${asset} was brought by $${
+      buyItem.quotePrice
+    }${canUseDepositsBalanceBool ? ' (deposit)' : ''}`
   );
 
   if (canUseDepositsBalanceBool) {
@@ -664,7 +666,7 @@ export const executeAssetsOperation = async ({
 
     await Promise.all([
       slack.send(
-        `${sellItem.assetQuantity} of ${sellItem.pk} was sold by ${sellItem.quotePrice}. It was bought by ${mostProfitableAsset.quotePrice} (profit of ${profit}%).`
+        `${sellItem.assetQuantity} of ${sellItem.pk} was *SOLD* by $${sellItem.quotePrice}. It was bought by $${mostProfitableAsset.quotePrice} (profit of ${profit}%).`
       ),
       updateBuyOrderStatus({ buyItem: mostProfitableAsset, sellItem }),
       updateWalletAssetsEarned({ order }),
