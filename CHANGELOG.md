@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.11.3](https://github.com/arantespp/cryptobot/compare/v1.11.2...v1.11.3) (2021-11-24)
+
+
+### Bug Fixes
+
+* profit valuation ([482adf4](https://github.com/arantespp/cryptobot/commit/482adf49785d3e64b0aff59ca0d37400949ee6ca))
+
 ### [1.11.2](https://github.com/arantespp/cryptobot/compare/v1.11.1...v1.11.2) (2021-11-24)
 
 
