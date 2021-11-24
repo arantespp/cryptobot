@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.11.1](https://github.com/arantespp/cryptobot/compare/v1.11.0...v1.11.1) (2021-11-24)
+
+
+### Bug Fixes
+
+* update slack messages format ([6f59a75](https://github.com/arantespp/cryptobot/commit/6f59a75395006299c7a8166d861ff5fb253de39b))
+
 ## [1.11.0](https://github.com/arantespp/cryptobot/compare/v1.10.0...v1.11.0) (2021-11-23)
 
 
