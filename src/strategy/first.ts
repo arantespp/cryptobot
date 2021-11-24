@@ -18,6 +18,7 @@ import { WALLET } from './wallet';
 
 import {
   MIN_NOTIONAL_MULTIPLIER,
+  MIN_NOTIONAL_TO_TRADE,
   MIN_PROFIT,
   TRADE_FEE,
 } from './strategy.config';
@@ -426,7 +427,7 @@ export const calculateItemProfit = ({
 }) => {
   const { quotePrice } = item;
   const currentPrice = getAssetCurrentPrice({ asset: item.pk, strategyData });
-  return (currentPrice - quotePrice) / quotePrice;
+  return (currentPrice / quotePrice) * (1 - TRADE_FEE) ** 2 - 1;
 };
 
 export const getMostProfitableAsset = ({
@@ -581,12 +582,12 @@ const getLowestBuyPricesFiltered = ({
       .filter((item) => ratio[item.pk] > 0)
       /**
        * Don't sell assets that have totalValue less than
-       * 10 x effective minNotional.
+       * MIN_NOTIONAL_TO_TRADE effective minNotional.
        */
       .filter(
         (item) =>
           strategyData.assets[item.pk].totalValue >
-          20 * getEffectiveMinNotional({ strategyData })
+          MIN_NOTIONAL_TO_TRADE * getEffectiveMinNotional({ strategyData })
       )
   );
 };

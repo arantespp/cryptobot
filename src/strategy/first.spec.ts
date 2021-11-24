@@ -122,7 +122,7 @@ test.each([
         },
       },
     },
-    9,
+    8.98001,
   ],
   [
     { pk: 'BTC', quotePrice: 100 },
@@ -133,10 +133,13 @@ test.each([
         },
       },
     },
-    0,
+    -0.00199,
   ],
 ])('calculateItemProfit %#', (item, strategyData, result) => {
-  expect(calculateItemProfit({ item, strategyData } as any)).toEqual(result);
+  expect(calculateItemProfit({ item, strategyData } as any)).toBeCloseTo(
+    result,
+    4
+  );
 });
 
 test.each([
