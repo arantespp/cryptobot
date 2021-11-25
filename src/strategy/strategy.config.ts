@@ -10,4 +10,4 @@ export const MIN_NOTIONAL_MULTIPLIER = 1.5;
 /**
  * The total value that a asset must have to be traded.
  */
-export const MIN_NOTIONAL_TO_TRADE = 10;
+export const MIN_NOTIONAL_TO_TRADE = 20;
