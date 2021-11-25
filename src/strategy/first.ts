@@ -21,6 +21,7 @@ import {
   MIN_NOTIONAL_TO_TRADE,
   MIN_PROFIT,
   TRADE_FEE,
+  LOWEST_QUANTITY_ASSETS_TO_NOT_TRADE,
 } from './strategy.config';
 
 export { QUOTE_BASE_TICKER };
@@ -105,19 +106,30 @@ export const getExtremeProportions = ({
     return acc;
   }, {} as { [ticker: string]: number });
 
-  const maxRatio = Math.max(...Object.values(ratio));
+  const findTickerByRatio = (ratioValue: number) =>
+    tickers.find((ticker) => ratio[ticker] === ratioValue) as string;
+
+  const sortedAssetsByRatioByAscending = Object.values(ratio)
+    .sort((a, b) => a - b)
+    .map((ratioValue) => findTickerByRatio(ratioValue));
 
   const minRatio = Math.min(...Object.values(ratio));
 
-  const highest = tickers.find(
-    (ticker) => ratio[ticker] === maxRatio
-  ) as string;
+  const maxRatio = Math.max(...Object.values(ratio));
 
-  const lowest = tickers.find((ticker) => ratio[ticker] === minRatio) as string;
+  const lowest = findTickerByRatio(minRatio);
+
+  const highest = findTickerByRatio(maxRatio);
 
   debug({ highest, lowest, ratio, maxRatio, minRatio });
 
-  return { highest, lowest, ratio, currentWalletProportion };
+  return {
+    highest,
+    lowest,
+    ratio,
+    currentWalletProportion,
+    sortedAssetsByRatioByAscending,
+  };
 };
 
 /**
@@ -573,28 +585,36 @@ const getLowestBuyPricesFiltered = ({
   walletProportion: WalletProportion;
   lowestBuyPrices: BuyOrderOnDatabase[];
 }) => {
-  const { lowest } = getExtremeProportions({ strategyData, walletProportion });
+  const { sortedAssetsByRatioByAscending } = getExtremeProportions({
+    strategyData,
+    walletProportion,
+  });
 
-  return (
-    lowestBuyPrices
-      /**
-       * Only return the items that have positive profit.
-       */
-      .filter((item) => calculateItemProfit({ item, strategyData }) > 0)
-      /**
-       * Remove the asset with the lowest ratio.
-       */
-      .filter((item) => item.pk !== lowest)
-      /**
-       * Don't sell assets that have totalValue less than
-       * MIN_NOTIONAL_TO_TRADE effective minNotional.
-       */
-      .filter(
-        (item) =>
-          strategyData.assets[item.pk].totalValue >
-          MIN_NOTIONAL_TO_TRADE * getEffectiveMinNotional({ strategyData })
-      )
+  const lowestRatioAssets = sortedAssetsByRatioByAscending.slice(
+    0,
+    LOWEST_QUANTITY_ASSETS_TO_NOT_TRADE
   );
+
+  const filtered = lowestBuyPrices
+    /**
+     * Only return the items that have positive profit.
+     */
+    .filter((item) => calculateItemProfit({ item, strategyData }) > 0)
+    /**
+     * Remove the assets with the lowest ratio.
+     */
+    .filter((item) => !lowestRatioAssets.includes(item.pk))
+    /**
+     * Don't sell assets that have totalValue less than
+     * MIN_NOTIONAL_TO_TRADE effective minNotional.
+     */
+    .filter(
+      (item) =>
+        strategyData.assets[item.pk].totalValue >
+        MIN_NOTIONAL_TO_TRADE * getEffectiveMinNotional({ strategyData })
+    );
+
+  return filtered;
 };
 
 export const executeAssetsOperation = async ({
@@ -671,12 +691,12 @@ export const executeAssetsOperation = async ({
      * `mostProfitableAsset`: that was bought before and was sold as `sellItem`.
      */
     const profit =
-      sellItem.quotePrice * sellItem.assetQuantity -
-      mostProfitableAsset.quotePrice * mostProfitableAsset.assetQuantity;
+      (sellItem.quotePrice - mostProfitableAsset.quotePrice) *
+      sellItem.assetQuantity;
 
     await Promise.all([
       slack.send(
-        `${sellItem.assetQuantity} of ${sellItem.pk} was *SOLD* by $${sellItem.quotePrice}. It was bought by $${mostProfitableAsset.quotePrice} (profit of ${profit}%).`
+        `${sellItem.assetQuantity} of ${sellItem.pk} was *SOLD* by $${sellItem.quotePrice}. It was bought by $${mostProfitableAsset.quotePrice} (profit of $${profit}).`
       ),
       updateBuyOrderStatus({ buyItem: mostProfitableAsset, sellItem }),
       updateWalletAssetsEarned({ order }),
@@ -722,6 +742,12 @@ export const runFirstStrategy = async () => {
     if (wasAssetsOperationExecuted) {
       debug('Executing quote operation for the SECOND time');
 
+      const { lowest: lowestAssetBeforeSecondQuoteOperation } =
+        getExtremeProportions({
+          strategyData,
+          walletProportion,
+        });
+
       /**
        * Get updated data.
        */
@@ -730,7 +756,7 @@ export const runFirstStrategy = async () => {
       await executeQuoteOperation({
         strategyData: newStrategyData,
         walletProportion,
-        asset: wasAssetsOperationExecuted.pk,
+        asset: lowestAssetBeforeSecondQuoteOperation,
       });
     }
   }

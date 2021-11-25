@@ -348,7 +348,7 @@ test.each([
   });
 });
 
-test.each([
+test.only.each([
   [
     {
       BTC: 100,
@@ -364,7 +364,11 @@ test.each([
         },
       },
     },
-    { highest: 'BTC', lowest: 'ETH' },
+    {
+      highest: 'BTC',
+      lowest: 'ETH',
+      sortedAssetsByRatioByAscending: ['ETH', 'BTC'],
+    },
   ],
   [
     {
@@ -381,9 +385,16 @@ test.each([
         ETH: {
           totalValue: 50,
         },
+        ADA: {
+          totalValue: 1,
+        },
       },
     },
-    { highest: 'BTC', lowest: 'ADA' },
+    {
+      highest: 'BTC',
+      lowest: 'VET',
+      sortedAssetsByRatioByAscending: ['VET', 'ADA', 'ETH', 'BTC'],
+    },
   ],
   [
     {
@@ -398,7 +409,7 @@ test.each([
           totalValue: 100,
         },
         ETH: {
-          totalValue: 50,
+          totalValue: 40,
         },
         ADA: {
           totalValue: 15,
@@ -408,7 +419,11 @@ test.each([
         },
       },
     },
-    { highest: 'BTC', lowest: 'VET' },
+    {
+      highest: 'BTC',
+      lowest: 'VET',
+      sortedAssetsByRatioByAscending: ['VET', 'ADA', 'ETH', 'BTC'],
+    },
   ],
 ])('getExtremeProportions %#', (walletProportion, strategyData, result) => {
   const extremeProportions = getExtremeProportions({
