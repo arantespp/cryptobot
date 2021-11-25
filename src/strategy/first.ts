@@ -661,12 +661,6 @@ export const executeAssetsOperation = async ({
       buyItem: mostProfitableAsset,
     });
 
-    /**
-     * Update quote quantity to be used on the next buy order.
-     */
-    strategyData.assets[QUOTE_BASE_TICKER].quantity +=
-      sellItem.assetQuantity * sellItem.quotePrice;
-
     const profit = Math.round(
       (sellItem.quotePrice / mostProfitableAsset.quotePrice - 1) * 100
     );
@@ -719,8 +713,13 @@ export const runFirstStrategy = async () => {
     if (wasAssetsOperationExecuted) {
       debug('Executing quote operation for the SECOND time');
 
+      /**
+       * Get updated data.
+       */
+      const newStrategyData = await getStrategyData(tickers);
+
       await executeQuoteOperation({
-        strategyData,
+        strategyData: newStrategyData,
         walletProportion,
       });
     }

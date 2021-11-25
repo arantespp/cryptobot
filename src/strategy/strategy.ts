@@ -31,7 +31,7 @@ export const startStrategy = () => {
 
   slack.send(message);
 
-  schedule('0,30 * * * * *', runFirstStrategy);
+  schedule('0 * * * * *', runFirstStrategy);
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
