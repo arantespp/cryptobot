@@ -661,6 +661,12 @@ export const executeAssetsOperation = async ({
       buyItem: mostProfitableAsset,
     });
 
+    /**
+     * Update quote quantity to be used on the next buy order.
+     */
+    strategyData.assets[QUOTE_BASE_TICKER].quantity +=
+      sellItem.assetQuantity * sellItem.quotePrice;
+
     const profit = Math.round(
       (sellItem.quotePrice / mostProfitableAsset.quotePrice - 1) * 100
     );
@@ -694,7 +700,7 @@ export const runFirstStrategy = async () => {
 
   debug({ strategyData, walletProportion });
 
-  debug('Executing quote operation for the first time');
+  debug('Executing quote operation for the FIRST time');
 
   const wasQuoteOperationExecuted = await executeQuoteOperation({
     strategyData,
@@ -702,7 +708,7 @@ export const runFirstStrategy = async () => {
   });
 
   if (!wasQuoteOperationExecuted) {
-    debug('Quote Operation was not executed in the first time');
+    debug('Quote Operation was not executed in the FIRST time');
     debug('Executing Assets Operation');
 
     const wasAssetsOperationExecuted = await executeAssetsOperation({
@@ -710,7 +716,14 @@ export const runFirstStrategy = async () => {
       walletProportion,
     });
 
-    debug({ wasAssetsOperationExecuted });
+    if (wasAssetsOperationExecuted) {
+      debug('Executing quote operation for the SECOND time');
+
+      await executeQuoteOperation({
+        strategyData,
+        walletProportion,
+      });
+    }
   }
 
   debug('First Strategy Finished');
