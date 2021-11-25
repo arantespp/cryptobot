@@ -1,6 +1,6 @@
 export const TRADE_FEE = 0.001;
 
-export const MIN_PROFIT = 1 / 100;
+export const MIN_PROFIT = 1.5 / 100;
 
 /**
  * Used to determining the quantity of the asset to buy.

@@ -309,9 +309,11 @@ const wasOrderSuccessful = ({ order }: { order: Order }) => {
 export const executeQuoteOperation = async ({
   strategyData,
   walletProportion,
+  asset,
 }: {
   strategyData: StrategyData;
   walletProportion: WalletProportion;
+  asset?: string;
 }): Promise<boolean> => {
   const debug = Debug('CryptoBot:executeQuoteOperation');
 
@@ -333,9 +335,12 @@ export const executeQuoteOperation = async ({
 
   debug({ lowest, highest, quoteOrderQty, canUseDepositsBalanceBool });
 
-  const asset = lowest;
+  /**
+   * When `asset` is defined, it's because it's a second buy.
+   */
+  const assetToBuy = asset || lowest;
 
-  const order = await buyOrder({ quoteOrderQty, asset });
+  const order = await buyOrder({ quoteOrderQty, asset: assetToBuy });
 
   debug(order);
 
@@ -350,7 +355,7 @@ export const executeQuoteOperation = async ({
   });
 
   await slack.send(
-    `${buyItem.assetQuantity} of ${asset} was brought by $${
+    `${buyItem.assetQuantity} of ${assetToBuy} was brought by $${
       buyItem.quotePrice
     }${canUseDepositsBalanceBool ? ' (deposit)' : ''}`
   );
@@ -568,7 +573,7 @@ const getLowestBuyPricesFiltered = ({
   walletProportion: WalletProportion;
   lowestBuyPrices: BuyOrderOnDatabase[];
 }) => {
-  const { ratio } = getExtremeProportions({ strategyData, walletProportion });
+  const { lowest } = getExtremeProportions({ strategyData, walletProportion });
 
   return (
     lowestBuyPrices
@@ -577,9 +582,9 @@ const getLowestBuyPricesFiltered = ({
        */
       .filter((item) => calculateItemProfit({ item, strategyData }) > 0)
       /**
-       * Return only that have positive proportion ratio.
+       * Remove the asset with the lowest ratio.
        */
-      .filter((item) => ratio[item.pk] > 0)
+      .filter((item) => item.pk !== lowest)
       /**
        * Don't sell assets that have totalValue less than
        * MIN_NOTIONAL_TO_TRADE effective minNotional.
@@ -598,7 +603,7 @@ export const executeAssetsOperation = async ({
 }: {
   strategyData: StrategyData;
   walletProportion: WalletProportion;
-}): Promise<boolean> => {
+}): Promise<false | SellOrderOnDatabase> => {
   const debug = Debug('CryptoBot:executeAssetsOperation');
 
   debug('Starting Assets Operation');
@@ -661,9 +666,13 @@ export const executeAssetsOperation = async ({
       buyItem: mostProfitableAsset,
     });
 
-    const profit = Math.round(
-      (sellItem.quotePrice / mostProfitableAsset.quotePrice - 1) * 100
-    );
+    /**
+     * `sellItem`: item that was sold.
+     * `mostProfitableAsset`: that was bought before and was sold as `sellItem`.
+     */
+    const profit =
+      sellItem.quotePrice * sellItem.assetQuantity -
+      mostProfitableAsset.quotePrice * mostProfitableAsset.assetQuantity;
 
     await Promise.all([
       slack.send(
@@ -673,7 +682,7 @@ export const executeAssetsOperation = async ({
       updateWalletAssetsEarned({ order }),
     ]);
 
-    return true;
+    return sellItem;
   } catch (error) {
     debug('Cannot perform selling order. Error:');
     console.error(error);
@@ -721,6 +730,7 @@ export const runFirstStrategy = async () => {
       await executeQuoteOperation({
         strategyData: newStrategyData,
         walletProportion,
+        asset: wasAssetsOperationExecuted.pk,
       });
     }
   }

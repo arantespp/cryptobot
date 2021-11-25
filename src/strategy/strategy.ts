@@ -32,7 +32,7 @@ export const startStrategy = () => {
   slack.send(message);
 
   /**
-   * Each 15 seconds.
+   * Every 15 seconds.
    */
   schedule('*/15 * * * * *', runFirstStrategy);
 
