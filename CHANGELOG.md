@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.12.6](https://github.com/arantespp/cryptobot/compare/v1.12.5...v1.12.6) (2021-11-25)
+
+
+### Bug Fixes
+
+* second buy order asset ([f609fc6](https://github.com/arantespp/cryptobot/commit/f609fc6ca6febbb50fa9a854c413eebabca2f1d2))
+
 ### [1.12.5](https://github.com/arantespp/cryptobot/compare/v1.12.4...v1.12.5) (2021-11-25)
 
 ### [1.12.4](https://github.com/arantespp/cryptobot/compare/v1.12.3...v1.12.4) (2021-11-25)
