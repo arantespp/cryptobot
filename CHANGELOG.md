@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.12.0](https://github.com/arantespp/cryptobot/compare/v1.11.3...v1.12.0) (2021-11-25)
+
+
+### Features
+
+* add quote operation after asset operation ([b4510d6](https://github.com/arantespp/cryptobot/commit/b4510d68716d2f281de784e370dfb3fa35d30322))
+
 ### [1.11.3](https://github.com/arantespp/cryptobot/compare/v1.11.2...v1.11.3) (2021-11-24)
 
 
