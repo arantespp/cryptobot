@@ -34,7 +34,7 @@ export const startStrategy = () => {
   /**
    * Every 15 seconds.
    */
-  schedule('*/15 * * * * *', runFirstStrategy);
+  // schedule('*/15 * * * * *', runFirstStrategy);
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
