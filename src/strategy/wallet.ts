@@ -15,7 +15,7 @@ export const WALLET = {
   SHIB: 15,
   // LTC: 10,
   // UNI: 10,
-  // LINK: 10,
+  LINK: 10,
   MATIC: 10,
   VET: 10,
   XLM: 5,
