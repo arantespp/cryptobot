@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.13.1](https://github.com/arantespp/cryptobot/compare/v1.13.0...v1.13.1) (2021-11-26)
+
+
+### Bug Fixes
+
+* min notional to trade ([fbf53a1](https://github.com/arantespp/cryptobot/commit/fbf53a1fb7e574afe3ace6591242ccc132d16f6a))
+
 ## [1.13.0](https://github.com/arantespp/cryptobot/compare/v1.12.10...v1.13.0) (2021-11-26)
 
 
