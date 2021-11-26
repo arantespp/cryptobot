@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.13.0](https://github.com/arantespp/cryptobot/compare/v1.12.10...v1.13.0) (2021-11-26)
+
+
+### Features
+
+* add LINK ([69890cc](https://github.com/arantespp/cryptobot/commit/69890cc080de51140380a75c0b5e57036ebd5b1a))
+
 ### [1.12.10](https://github.com/arantespp/cryptobot/compare/v1.12.9...v1.12.10) (2021-11-25)
 
 ### [1.12.9](https://github.com/arantespp/cryptobot/compare/v1.12.8...v1.12.9) (2021-11-25)
