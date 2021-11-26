@@ -348,7 +348,7 @@ test.each([
   });
 });
 
-test.only.each([
+test.each([
   [
     {
       BTC: 100,
