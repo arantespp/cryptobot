@@ -1,6 +1,7 @@
 import { Order } from '@binance/connector';
 import Debug from 'debug';
 import { Decimal } from 'decimal.js';
+import * as math from 'mathjs';
 
 import {
   getStrategyData,
@@ -28,7 +29,7 @@ export { QUOTE_BASE_TICKER };
 
 type WalletProportion = { [asset: string]: number };
 
-const getWalletProportion = async (): Promise<WalletProportion> => {
+export const getWalletProportion = async (): Promise<WalletProportion> => {
   if (isProduction) {
     return WALLET;
   }
@@ -44,7 +45,7 @@ const getWalletProportion = async (): Promise<WalletProportion> => {
   };
 };
 
-const getWalletProportionTickers = (wallet: WalletProportion) =>
+export const getWalletProportionTickers = (wallet: WalletProportion) =>
   Object.keys(wallet);
 
 export const getWalletProportionNormalized = (wallet: WalletProportion) => {
@@ -96,8 +97,6 @@ export const getExtremeProportions = ({
   const targetWalletProportionNormalized =
     getWalletProportionNormalized(walletProportion);
 
-  debug({ currentWalletProportion, targetWalletProportionNormalized });
-
   const ratio = tickers.reduce((acc, ticker) => {
     acc[ticker] =
       (currentWalletProportion[ticker] -
@@ -121,7 +120,17 @@ export const getExtremeProportions = ({
 
   const highest = findTickerByRatio(maxRatio);
 
-  debug({ highest, lowest, ratio, maxRatio, minRatio });
+  const ratioMean = math.mean(Object.values(ratio));
+
+  const ratioStd = math.std(Object.values(ratio));
+
+  const zScore = tickers.reduce((acc, ticker) => {
+    acc[ticker] = (ratio[ticker] - ratioMean) / ratioStd;
+    return acc;
+  }, {} as { [ticker: string]: number });
+
+  const zScoreAmplitude =
+    Math.max(...Object.values(zScore)) - Math.min(...Object.values(zScore));
 
   return {
     highest,
@@ -129,11 +138,13 @@ export const getExtremeProportions = ({
     ratio,
     currentWalletProportion,
     sortedAssetsByRatioByAscending,
+    zScore,
+    zScoreAmplitude,
   };
 };
 
 /**
- * Multiplied by 1.5 to have a margin for filters.
+ * Multiplied by `MIN_NOTIONAL_MULTIPLIER` to have a margin for filters.
  */
 export const getEffectiveMinNotional = ({
   strategyData,
