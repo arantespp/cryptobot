@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/arantespp/cryptobot/compare/v1.13.1...v1.14.0) (2021-11-29)
+
+
+### Features
+
+* update wallet ([2968f36](https://github.com/arantespp/cryptobot/commit/2968f3690e513a5d3d92f60279c7b7a71d5cfda1))
+
 ### [1.13.1](https://github.com/arantespp/cryptobot/compare/v1.13.0...v1.13.1) (2021-11-26)
 
 
