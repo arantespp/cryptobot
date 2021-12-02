@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.15.0](https://github.com/arantespp/cryptobot/compare/v1.14.0...v1.15.0) (2021-12-02)
+
+
+### Features
+
+* update strategy - sell item if z-score is too high ([fcd4e3b](https://github.com/arantespp/cryptobot/commit/fcd4e3be0e19910926c64d07588e4d0e8de99bc3))
+
 ## [1.14.0](https://github.com/arantespp/cryptobot/compare/v1.13.1...v1.14.0) (2021-11-29)
 
 
