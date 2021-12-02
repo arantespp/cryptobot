@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.15.1](https://github.com/arantespp/cryptobot/compare/v1.15.0...v1.15.1) (2021-12-02)
+
+
+### Bug Fixes
+
+* LOWEST_QUANTITY_ASSETS_TO_NOT_TRADE ([5460624](https://github.com/arantespp/cryptobot/commit/5460624cb5c70f6d8aca8eebc8c1905cb330aff5))
+
 ## [1.15.0](https://github.com/arantespp/cryptobot/compare/v1.14.0...v1.15.0) (2021-12-02)
 
 
