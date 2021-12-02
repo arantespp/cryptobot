@@ -23,6 +23,7 @@ import {
   MIN_PROFIT,
   TRADE_FEE,
   LOWEST_QUANTITY_ASSETS_TO_NOT_TRADE,
+  Z_SCORE_THRESHOLD_TO_SELL,
 } from './strategy.config';
 
 export { QUOTE_BASE_TICKER };
@@ -587,6 +588,41 @@ const sellBoughtAsset = async ({
   return order;
 };
 
+/**
+ * Check if the asset the asset will become the lowest ratio if sold and the
+ * same value buy the current lowest ratio.
+ */
+export const willAssetBeTheLowestIfSold = ({
+  asset,
+  strategyData,
+  walletProportion,
+}: {
+  asset: string;
+  strategyData: StrategyData;
+  walletProportion: WalletProportion;
+}) => {
+  const { lowest: currentLowest } = getExtremeProportions({
+    walletProportion,
+    strategyData,
+  });
+
+  const newStrategyData: typeof strategyData = JSON.parse(
+    JSON.stringify(strategyData)
+  );
+
+  const totalToTrade = 3 * strategyData.minNotional;
+
+  newStrategyData.assets[asset].totalValue -= totalToTrade;
+  newStrategyData.assets[currentLowest].totalValue += totalToTrade;
+
+  const newExtremeValues = getExtremeProportions({
+    strategyData: newStrategyData,
+    walletProportion,
+  });
+
+  return newExtremeValues.lowest === asset;
+};
+
 const getLowestBuyPricesFiltered = ({
   strategyData,
   walletProportion,
@@ -596,7 +632,7 @@ const getLowestBuyPricesFiltered = ({
   walletProportion: WalletProportion;
   lowestBuyPrices: BuyOrderOnDatabase[];
 }) => {
-  const { sortedAssetsByRatioByAscending } = getExtremeProportions({
+  const { sortedAssetsByRatioByAscending, zScore } = getExtremeProportions({
     strategyData,
     walletProportion,
   });
@@ -607,14 +643,23 @@ const getLowestBuyPricesFiltered = ({
   );
 
   const filtered = lowestBuyPrices
-    /**
-     * Only return the items that have positive profit.
-     */
-    .filter((item) => calculateItemProfit({ item, strategyData }) > 0)
+    .map((item) => ({
+      ...item,
+      profit: calculateItemProfit({ item, strategyData }),
+      zScore: zScore[item.pk],
+    }))
     /**
      * Remove the assets with the lowest ratio.
      */
     .filter((item) => !lowestRatioAssets.includes(item.pk))
+    /**
+     * Only return the items that have positive profit or if it has a huge
+     * z-score.
+     */
+    .filter(
+      (item) =>
+        item.profit > MIN_PROFIT || item.zScore > Z_SCORE_THRESHOLD_TO_SELL
+    )
     /**
      * Don't sell assets that have totalValue less than
      * MIN_NOTIONAL_TO_TRADE effective minNotional.
@@ -623,7 +668,22 @@ const getLowestBuyPricesFiltered = ({
       (item) =>
         strategyData.assets[item.pk].totalValue >
         MIN_NOTIONAL_TO_TRADE * getEffectiveMinNotional({ strategyData })
-    );
+    )
+    /**
+     * Don't sell if the asset will become the lowest if sold.
+     */
+    .filter(
+      (item) =>
+        !willAssetBeTheLowestIfSold({
+          asset: item.pk,
+          strategyData,
+          walletProportion,
+        })
+    )
+    /**
+     * From the most profitable to the least profitable.
+     */
+    .sort((a, b) => b.profit - a.profit);
 
   return filtered;
 };
@@ -649,42 +709,19 @@ export const executeAssetsOperation = async ({
     walletProportion,
   });
 
-  if (lowestBuyPrices.length === 0) {
-    debug('There are no profitable assets');
+  const itemToSell = lowestBuyPrices[0];
+
+  if (!itemToSell) {
+    debug('There are no items to sell.');
     return false;
   }
 
-  const mostProfitableAsset = getMostProfitableAsset({
-    strategyData,
-    items: lowestBuyPrices,
-  });
-
-  const greatestProfit = calculateItemProfit({
-    strategyData,
-    item: mostProfitableAsset,
-  });
-
-  debug({
-    mostProfitableAsset,
-    buyPrice: mostProfitableAsset.quotePrice,
-    greatestProfit,
-    currentPrice: getAssetCurrentPrice({
-      asset: mostProfitableAsset.pk,
-      strategyData,
-    }),
-  });
-
-  if (greatestProfit < MIN_PROFIT) {
-    debug(
-      `Greatest ${mostProfitableAsset.pk} profit (${greatestProfit}) is too low than the minimal profit: ${MIN_PROFIT}`
-    );
-    return false;
-  }
+  debug({ itemToSell });
 
   try {
     const order = await sellBoughtAsset({
       strategyData,
-      item: mostProfitableAsset,
+      item: itemToSell,
     });
 
     if (!wasOrderSuccessful({ order })) {
@@ -694,7 +731,7 @@ export const executeAssetsOperation = async ({
 
     const sellItem = await saveSellOrder({
       order,
-      buyItem: mostProfitableAsset,
+      buyItem: itemToSell,
     });
 
     /**
@@ -702,14 +739,13 @@ export const executeAssetsOperation = async ({
      * `mostProfitableAsset`: that was bought before and was sold as `sellItem`.
      */
     const profit =
-      (sellItem.quotePrice - mostProfitableAsset.quotePrice) *
-      sellItem.assetQuantity;
+      (sellItem.quotePrice - itemToSell.quotePrice) * sellItem.assetQuantity;
 
     await Promise.all([
       slack.send(
-        `${sellItem.assetQuantity} of ${sellItem.pk} was *SOLD* by $${sellItem.quotePrice}. It was bought by $${mostProfitableAsset.quotePrice} (profit of $${profit}).`
+        `${sellItem.assetQuantity} of ${sellItem.pk} was *SOLD* by $${sellItem.quotePrice}. It was bought by $${itemToSell.quotePrice} (profit of $${profit}).`
       ),
-      updateBuyOrderStatus({ buyItem: mostProfitableAsset, sellItem }),
+      updateBuyOrderStatus({ buyItem: itemToSell, sellItem }),
       updateWalletAssetsEarned({ order }),
     ]);
 

@@ -12,6 +12,7 @@ import {
   calculateItemProfit,
   getAssetFromOrder,
   getAssetBuyOrdersWithLowestBuyPrice,
+  willAssetBeTheLowestIfSold,
 } from './first';
 
 import * as apiBinanceModule from '../api/binance';
@@ -19,6 +20,43 @@ import * as databaseModule from '../api/database';
 
 jest.mock('../api/binance');
 jest.mock('../api/database');
+
+test('willAssetBeTheLowestIfSold', () => {
+  const strategyData = {
+    minNotional: 50,
+    assets: {
+      BTC: {
+        totalValue: 100,
+      },
+      ETH: {
+        totalValue: 100,
+      },
+      ADA: {
+        totalValue: 100,
+      },
+      VET: {
+        totalValue: 100,
+      },
+    },
+  } as any;
+
+  const walletProportion = {
+    BTC: 100,
+    ETH: 101,
+    ADA: 102,
+    VET: 103,
+  };
+
+  Object.keys(walletProportion).forEach((asset) => {
+    expect(
+      willAssetBeTheLowestIfSold({
+        strategyData,
+        walletProportion,
+        asset,
+      })
+    ).toBe(true);
+  });
+});
 
 test('getAssetBuyOrdersWithLowestBuyPrice', async () => {
   const buyOrderMock = jest

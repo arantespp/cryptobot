@@ -12,6 +12,7 @@ export const WALLET = {
   DOT: 15,
   DOGE: 15,
   AVAX: 15,
+  LUNA: 15,
   SHIB: 15,
   LTC: 10,
   UNI: 10,
@@ -24,5 +25,7 @@ export const WALLET = {
   FTM: 5,
   SAND: 5,
   GALA: 5,
+  XMR: 5,
   ONE: 1,
+  BTT: 1,
 };
