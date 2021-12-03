@@ -1,3 +1,11 @@
+const BETS = {
+  BTT: 1,
+  STMX: 1,
+  SANTOS: 1,
+  ONE: 1,
+  FOR: 1,
+};
+
 /**
  * Proportional to market cap.
  * https://coinmarketcap.com/all/views/all/
@@ -26,6 +34,5 @@ export const WALLET = {
   SAND: 5,
   GALA: 5,
   XMR: 5,
-  ONE: 1,
-  BTT: 1,
+  ...BETS,
 };

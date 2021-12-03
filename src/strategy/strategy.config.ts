@@ -15,10 +15,10 @@ export const MIN_NOTIONAL_MULTIPLIER = 1.5;
 export const MIN_NOTIONAL_TO_TRADE = 10;
 
 /**
- * Trade only a 30% of the wallet.
+ * Trade only a percentage of the wallet.
  */
 export const LOWEST_QUANTITY_ASSETS_TO_NOT_TRADE = Math.round(
-  Object.keys(WALLET).length * 0.7
+  Object.keys(WALLET).length * 0.5
 );
 
 /**
