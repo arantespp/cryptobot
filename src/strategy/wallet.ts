@@ -1,7 +1,6 @@
 const BETS = {
   BTT: 1,
   STMX: 1,
-  SANTOS: 1,
   ONE: 1,
   FOR: 1,
 };
