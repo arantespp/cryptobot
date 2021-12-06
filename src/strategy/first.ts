@@ -810,3 +810,41 @@ export const runFirstStrategy = async () => {
 
   debug('First Strategy Finished');
 };
+
+export const slackLogs = async () => {
+  const walletProportion = await getWalletProportion();
+
+  const tickers = getWalletProportionTickers(walletProportion);
+
+  const strategyData = await getStrategyData(tickers);
+
+  const { zScore } = getExtremeProportions({
+    strategyData,
+    walletProportion,
+  });
+
+  const text = tickers
+    .sort(
+      (a, b) =>
+        strategyData.assets[b].totalValue - strategyData.assets[a].totalValue
+    )
+    .map((ticker) => {
+      const r = Math.round(zScore[ticker] * 100) / 100;
+      const v = strategyData.assets[ticker].totalValue.toFixed(2);
+      const p = strategyData.assets[ticker].price.toPrecision(6);
+      return `• ${ticker} (*${r}*): $${v} --- Price: $${p}`;
+    })
+    .join('\n');
+
+  await slack.send({
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text,
+        },
+      },
+    ],
+  });
+};

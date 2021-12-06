@@ -4,7 +4,7 @@ import { slack } from '../api/slack';
 
 import { isProduction } from '../config';
 
-import { runFirstStrategy } from './first';
+import { runFirstStrategy, slackLogs } from './first';
 import { updateEarningsSnapshot } from './updateEarningsSnapshot';
 
 const errorHandlerWrapper = (fn: () => any) => async () => {
@@ -31,10 +31,9 @@ export const startStrategy = () => {
 
   slack.send(message);
 
-  /**
-   * Every 15 seconds.
-   */
   schedule('*/30 * * * * *', runFirstStrategy);
+
+  schedule('*/10 * * * *', slackLogs);
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
