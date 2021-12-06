@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.16.0](https://github.com/arantespp/cryptobot/compare/v1.15.3...v1.16.0) (2021-12-06)
+
+
+### Features
+
+* add slack logs ([8ce8dea](https://github.com/arantespp/cryptobot/commit/8ce8dea37381dc2e77b7ea93f27b8b1d32d217a7))
+
 ### [1.15.3](https://github.com/arantespp/cryptobot/compare/v1.15.2...v1.15.3) (2021-12-03)
 
 
