@@ -9,7 +9,7 @@ const BETS = [
   'HOT',
   'SC',
   'ALICE',
-  'AKRO',
+  // 'AKRO', // Do not exist in the BUSD market.
   'REEF',
   'PSG',
   // 'SANTOS', // Do not exist in the BUSD market.
