@@ -1,15 +1,31 @@
-const BETS = {
-  BTT: 1,
-  STMX: 1,
-  ONE: 1,
-  FOR: 1,
-};
+const BETS = [
+  'BTT',
+  'STMX',
+  'ONE',
+  'FOR',
+  'TRX',
+  'SUN',
+  'FIL',
+  'HOT',
+  'SC',
+  'ALICE',
+  'AKRO',
+  'REEF',
+  'PSG',
+  'SANTOS',
+];
+
+const BETS_WEIGHT = 0.5;
 
 /**
  * Proportional to market cap.
  * https://coinmarketcap.com/all/views/all/
  */
 export const WALLET = {
+  ...BETS.reduce((acc, bet) => {
+    acc[bet] = BETS_WEIGHT;
+    return acc;
+  }, {}),
   BTC: 30,
   ETH: 30,
   BNB: 20,
@@ -33,5 +49,6 @@ export const WALLET = {
   SAND: 5,
   GALA: 5,
   XMR: 5,
-  ...BETS,
+  STX: 5,
+  CHZ: 2,
 };

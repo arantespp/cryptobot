@@ -34,6 +34,7 @@ export const startStrategy = () => {
   schedule('*/30 * * * * *', runFirstStrategy);
 
   schedule('0 * * * *', slackLogs);
+  slackLogs();
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
