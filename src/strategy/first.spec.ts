@@ -426,6 +426,9 @@ test.each([
         ADA: {
           totalValue: 1,
         },
+        VET: {
+          totalValue: 0,
+        },
       },
     },
     {

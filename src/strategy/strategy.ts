@@ -33,7 +33,7 @@ export const startStrategy = () => {
 
   schedule('*/30 * * * * *', runFirstStrategy);
 
-  schedule('*/10 * * * *', slackLogs);
+  schedule('0 * * * *', slackLogs);
 
   schedule('15 59 * * * *', updateEarningsSnapshot);
 };
