@@ -12,7 +12,7 @@ const BETS = [
   'AKRO',
   'REEF',
   'PSG',
-  'SANTOS',
+  // 'SANTOS', // Do not exist in the BUSD market.
 ];
 
 const BETS_WEIGHT = 0.5;
