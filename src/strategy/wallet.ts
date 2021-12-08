@@ -50,5 +50,5 @@ export const WALLET = {
   GALA: 5,
   XMR: 5,
   STX: 5,
-  CHZ: 2,
+  CHZ: 5,
 };
