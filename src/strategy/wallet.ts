@@ -16,7 +16,7 @@ const BETS = [
   // 'SANTOS', // Do not exist in the BUSD market.
 ];
 
-const BETS_WEIGHT = 0.6;
+const BETS_WEIGHT = 0.8;
 
 /**
  * Proportional to market cap.
