@@ -12,10 +12,11 @@ const BETS = [
   // 'AKRO', // Do not exist in the BUSD market.
   'REEF',
   'PSG',
+  'SLP',
   // 'SANTOS', // Do not exist in the BUSD market.
 ];
 
-const BETS_WEIGHT = 0.5;
+const BETS_WEIGHT = 0.4;
 
 /**
  * Proportional to market cap.
@@ -46,6 +47,7 @@ export const WALLET = {
   GRT: 10,
   XLM: 5,
   FTM: 5,
+  AXS: 5,
   SAND: 5,
   GALA: 5,
   XMR: 5,
