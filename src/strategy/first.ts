@@ -823,7 +823,12 @@ export const slackLogs = async () => {
     walletProportion,
   });
 
-  const text = tickers
+  const total = Object.values(strategyData.assets).reduce(
+    (acc, asset) => acc + asset.totalValue,
+    0
+  );
+
+  let text = tickers
     .sort(
       (a, b) =>
         strategyData.assets[b].totalValue - strategyData.assets[a].totalValue
@@ -835,6 +840,8 @@ export const slackLogs = async () => {
       return `• ${ticker} (*${r}*): $${v} --- Price: $${p}`;
     })
     .join('\n');
+
+  text += `\n\nTotal: $${total.toFixed(2)}`;
 
   await slack.send({
     blocks: [

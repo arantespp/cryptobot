@@ -23,10 +23,10 @@ const BETS_WEIGHT = 1;
  * https://coinmarketcap.com/all/views/all/
  */
 export const WALLET = {
-  ...BETS.reduce((acc, bet) => {
-    acc[bet] = BETS_WEIGHT;
-    return acc;
-  }, {}),
+  // ...BETS.reduce((acc, bet) => {
+  //   acc[bet] = BETS_WEIGHT;
+  //   return acc;
+  // }, {}),
   BTC: 30,
   ETH: 30,
   BNB: 20,
