@@ -14,6 +14,10 @@ const BETS = [
   'PSG',
   'SLP',
   // 'SANTOS', // Do not exist in the BUSD market.
+  'ATOM',
+  'FXS',
+  'SCRT',
+  'CELR',
 ];
 
 const BETS_WEIGHT = 1;
