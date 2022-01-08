@@ -837,7 +837,7 @@ export const slackLogs = async () => {
       const r = Math.round(zScore[ticker] * 100) / 100;
       const v = strategyData.assets[ticker].totalValue.toFixed(2);
       const q = strategyData.assets[ticker].quantity.toPrecision(6);
-      return `• ${ticker} (*${r}*): $${v} --- Qty: $${q}`;
+      return `• ${ticker} (*${r}*): $${v} --- Qty: ${q}`;
     })
     .join('\n');
 
